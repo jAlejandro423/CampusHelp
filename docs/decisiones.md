@@ -43,3 +43,15 @@ Decisiones de implementación (sin desviarse del modelo mínimo):
 | FK `atencion/historial.caso_id` | `CASCADE` en borrado | Son dependientes del caso; sin caso no tienen sentido. |
 | `correo` / `area.nombre` UNIQUE + `UNIQUE(area_id, nombre)` | Unicidad en BD | Regla del taller: una categoría pertenece a un área y no se duplica dentro de ella. |
 | Fechas | `fecha_creacion/fecha/atencion` con `DEFAULT CURRENT_TIMESTAMP`; `fecha_asignacion/cierre` NULL | Trazabilidad para métricas Lead/Cycle Time; la asignación y el cierre los pone el flujo. |
+
+## D-04 · Datos semilla (2026-10-05 · Issue #5)
+
+Implementado en `db/seeds.sql`. Se ejecuta después del esquema: `mysql < db/schema.sql && mysql < db/seeds.sql`. Limpia con `TRUNCATE` (con `FOREIGN_KEY_CHECKS = 0/1`) para ser re-ejecutable en desarrollo.
+
+| Dato | Contenido | Motivo |
+|---|---|---|
+| 5 áreas | Las del taller, con `id` 1–5 | Base de clasificación obligatoria. |
+| 16 categorías | Las del taller (`id` 1–16), cada una con su `area_id` | Cubren Hardware (4), Software (3), Red (3), Cuentas (4) y Plataformas (2). |
+| 6 usuarios (`id` 1–6) | Laura y Carlos (solicitantes), Diego y María (agentes), Pedro (validador), Ana (administradora) | Un usuario por rol para probar el flujo + 2 de reserva en los roles con más carga. Correos `@universidad.edu.co`. |
+| 6 casos (`id` 1–6) | Pendiente (1), En análisis (2), En atención (3), En validación (4), Cerrada (5–6) | Uno por estado + un Cerrado extra; mezclan Incidente/Solicitud, P1/P2/P3 y las 5 áreas para probar bandeja, filtros e indicadores. |
+| Atenciones + historial | Caso 3 en curso sin solución; casos 4–6 con solución; 17 eventos (uno por transición) | Permiten demostrar el flujo completo y calcular tiempos de atención. |
