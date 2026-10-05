@@ -55,3 +55,16 @@ Implementado en `db/seeds.sql`. Se ejecuta después del esquema: `mysql < db/sch
 | 6 usuarios (`id` 1–6) | Laura y Carlos (solicitantes), Diego y María (agentes), Pedro (validador), Ana (administradora) | Un usuario por rol para probar el flujo + 2 de reserva en los roles con más carga. Correos `@universidad.edu.co`. |
 | 6 casos (`id` 1–6) | Pendiente (1), En análisis (2), En atención (3), En validación (4), Cerrada (5–6) | Uno por estado + un Cerrado extra; mezclan Incidente/Solicitud, P1/P2/P3 y las 5 áreas para probar bandeja, filtros e indicadores. |
 | Atenciones + historial | Caso 3 en curso sin solución; casos 4–6 con solución; 17 eventos (uno por transición) | Permiten demostrar el flujo completo y calcular tiempos de atención. |
+
+## D-05 · Scaffold del backend (2026-10-05 · Issue #6)
+
+`backend/` con Express 4 + `mysql2/promise` + `dotenv` + `cors`, en CommonJS. Estructura real: `src/db/` (pool), `src/routes/`, `src/controllers/`, `src/services/`, `src/middlewares/`, `src/app.js`, `src/server.js`.
+
+| Decisión | Motivo |
+|---|---|
+| Pool único `mysql2/promise` en `src/db/pool.js` | Reutiliza conexiones; `services/` lo importan para consultas parametrizadas. |
+| Capas routes → controllers → services → db | Las reglas de negocio (máquina de estados, validaciones HU) vivirán en `services/`; el frontend nunca valida. |
+| `GET /api/health` con `SELECT 1` | 200 `{ status: 'ok', db: 'up' }` si la BD responde; 500 `{ error, detalles }` si no. Sirve para verificar el entorno antes de cada demo. |
+| `notFound` + `errorHandler` con `{ error, detalles }` y helper `createError(status, msg, detalles)` | Formato único exigido por las convenciones; códigos 400/404/409/500 listos para los endpoints de casos. |
+| `npm start` = `node src/server.js`, `npm run dev` = `node --watch` | Sin `nodemon`: Node 20 ya recarga en desarrollo y hay una dependencia menos que instalar. |
+| Solo `.env.example` versionado | Los secretos nunca se suben (ver `.gitignore`); cada integrante copia a `.env`. |

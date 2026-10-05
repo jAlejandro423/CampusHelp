@@ -9,15 +9,15 @@ CampusHelp/
 ├── .github/
 │   ├── pull_request_template.md     # Plantilla que se carga en cada PR
 │   └── ISSUE_TEMPLATE/              # Plantillas: historia, tarea, defecto
-├── backend/                         # API REST – Node.js + Express
+├── backend/                         # API REST – Node.js + Express (scaffold #6)
 │   ├── src/
-│   │   ├── config/                  # Conexión MySQL y variables de entorno
-│   │   ├── routes/                  # Definición de rutas (/api/casos, /api/areas…)
+│   │   ├── db/                      # Pool MySQL (pool.js con mysql2/promise)
+│   │   ├── routes/                  # Definición de rutas (/api/health, /api/casos…)
 │   │   ├── controllers/             # Reciben la petición y responden
-│   │   ├── services/                # Reglas de negocio (estados.js, casos.js…)
-│   │   ├── repositories/            # Consultas SQL (mysql2, consultas parametrizadas)
-│   │   ├── middlewares/             # Manejo de errores, validación, rol del usuario
-│   │   └── app.js                   # Configuración de Express
+│   │   ├── services/                # Reglas de negocio y consultas (casos.js, estados.js…)
+│   │   ├── middlewares/             # notFound, errorHandler, httpError (formato { error, detalles })
+│   │   ├── app.js                   # Configuración de Express
+│   │   └── server.js                # Arranque (dotenv + listen)
 │   ├── tests/                       # Pruebas del backend (opcional: Jest + Supertest)
 │   ├── .env.example
 │   └── package.json
