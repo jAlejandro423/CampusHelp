@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (solo se sube .env.example)
+.env
+.env.*
+!.env.example
+
+# Builds
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Archivos temporales de Office (hojas de métricas)
+~$*
