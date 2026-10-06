@@ -20,12 +20,26 @@ El taller permite que el equipo proponga la tecnología siempre que quede docume
 **Decisión:** no hay login real. El usuario elige un **usuario de prueba** (solicitante, agente, validador o administrador) y el frontend envía su `id` en cada petición.
 **Motivo:** el taller lo permite explícitamente y así el tiempo se invierte en el flujo principal.
 
-## D-03 · Modelo de datos
+## D-03 · Modelo de datos (2026-10-05 · Issue #4)
 
-Se usan las 6 entidades mínimas del taller. Campos agregados:
+Implementado en `db/schema.sql` (MySQL 8, ejecutable desde cero con `DROP DATABASE IF EXISTS + CREATE`).
+Se usan las 6 entidades mínimas del taller, en singular y `snake_case`, con `InnoDB` y `utf8mb4_unicode_ci` (tildes en `En análisis` / `En validación`).
+
+Campos agregados:
 
 | Tabla | Campo | Motivo |
 |---|---|---|
-| `historial` | `detalle` | Guardar el motivo de devolución desde validación (HU-07) y datos del evento. |
+| `historial` | `detalle` TEXT NULL | Guardar el motivo de devolución desde validación (HU-07) y datos del evento. |
 
-*(Agregar aquí cualquier otro campo o tabla nuevo con su justificación.)*
+Decisiones de implementación (sin desviarse del modelo mínimo):
+
+| Tema | Decisión | Motivo |
+|---|---|---|
+| ENUMs | `usuario.rol`, `caso.tipo`, `caso.prioridad`, `caso.estado` como `ENUM` | Valores cerrados del taller; el resto de la validación vive en el backend. |
+| `historial.estado_anterior/nuevo` | `VARCHAR(30)` NULL, no `ENUM` | Permiten registrar eventos sin transición (creación, asignación) con NULL. |
+| Índices | `idx_caso_estado`, `idx_caso_usuario`, `idx_caso_prioridad` | Exigidos por la issue #4; soportan bandeja y filtros (HU-03, HU-09). |
+| FK `categoria.area_id` | `RESTRICT` en borrado | Una categoría debe pertenecer a un área; no se borra un área con categorías. |
+| FK `caso.agente_id` | `SET NULL` en borrado | El caso sobrevive si se desactiva/elimina el agente. |
+| FK `atencion/historial.caso_id` | `CASCADE` en borrado | Son dependientes del caso; sin caso no tienen sentido. |
+| `correo` / `area.nombre` UNIQUE + `UNIQUE(area_id, nombre)` | Unicidad en BD | Regla del taller: una categoría pertenece a un área y no se duplica dentro de ella. |
+| Fechas | `fecha_creacion/fecha/atencion` con `DEFAULT CURRENT_TIMESTAMP`; `fecha_asignacion/cierre` NULL | Trazabilidad para métricas Lead/Cycle Time; la asignación y el cierre los pone el flujo. |
