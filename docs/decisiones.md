@@ -68,3 +68,15 @@ Implementado en `db/seeds.sql`. Se ejecuta después del esquema: `mysql < db/sch
 | `notFound` + `errorHandler` con `{ error, detalles }` y helper `createError(status, msg, detalles)` | Formato único exigido por las convenciones; códigos 400/404/409/500 listos para los endpoints de casos. |
 | `npm start` = `node src/server.js`, `npm run dev` = `node --watch` | Sin `nodemon`: Node 20 ya recarga en desarrollo y hay una dependencia menos que instalar. |
 | Solo `.env.example` versionado | Los secretos nunca se suben (ver `.gitignore`); cada integrante copia a `.env`. |
+
+## D-06 · Endpoints de catálogo (2026-10-05 · Issue #7)
+
+`GET /api/usuarios?rol=`, `GET /api/areas` y `GET /api/categorias?area_id=`. Sostienen el formulario de registro (áreas → categorías) y el selector de usuario de prueba (D-02).
+
+| Decisión | Motivo |
+|---|---|
+| Solo registros activos (`activo/activa = TRUE`) | Los desactivados no deben ofrecerse en el formulario ni en el selector. |
+| `rol` validado contra el `ENUM` (400 si es inválido) | Falla rápido con `{ error, detalles }` antes de tocar la BD. |
+| `area_id` entero positivo (400 si no) | Evita SQL inválido; siempre con consulta parametrizada (`?`). |
+| Filtro sin coincidencias → `200 []` | Semántica de filtro, no de recurso inexistente; el frontend muestra lista vacía. |
+| Sin `password`/campos sensibles en usuarios | La tabla no los tiene; se exponen `id, nombre, correo, rol` para el selector. |
