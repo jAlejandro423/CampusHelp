@@ -80,3 +80,18 @@ Implementado en `db/seeds.sql`. Se ejecuta después del esquema: `mysql < db/sch
 | `area_id` entero positivo (400 si no) | Evita SQL inválido; siempre con consulta parametrizada (`?`). |
 | Filtro sin coincidencias → `200 []` | Semántica de filtro, no de recurso inexistente; el frontend muestra lista vacía. |
 | Sin `password`/campos sensibles en usuarios | La tabla no los tiene; se exponen `id, nombre, correo, rol` para el selector. |
+
+## D-07 · Frontend TypeScript + Tailwind + contexto de usuario (2026-10-06 · Issue #8)
+
+**Contexto:** el scaffold inicial (#8) dejó `API_URL` sin `.env.example`, el usuario en `useState` local de `MainLayout` y menú por rol desalineado con HU-07/HU-09/HU-10/HU-11.
+
+| Decisión | Motivo |
+|---|---|
+| TypeScript en frontend (`.tsx`, `client.ts` tipado) | El template Vite ya lo trae; tipos `Usuario/Area/Categoria` evitan el `@ts-expect-error` y detectan errores de `rol`/`area_id` en compilación. Backend sigue en JS, el contrato es JSON. |
+| Tailwind CSS v4 vía `@tailwindcss/vite` + `@import "tailwindcss"` | Utilidades en clases (`bg-slate-50`, `rounded-2xl`) sin CSS manual; coherente con el layout existente. |
+| `frontend/.env.example` con `VITE_API_URL=http://localhost:3000` + fallback `|| "http://localhost:3000"` en `src/api/client.ts` | Sin el example, `import.meta.env.VITE_API_URL` queda `undefined` y el fetch va a `undefined/api/...`. El fallback permite clonar y correr sin `.env`. |
+| `src/api/client.ts` con `URLSearchParams` | Query params (`?rol=`, `?area_id=`) construidos de forma segura; reemplaza `src/services/api.js`. |
+| `src/context/UsuarioContext.tsx` + `useUsuario() { usuario, usuarios, setUsuario }` con `localStorage campushelp_usuario_id` | HU-01 necesita `usuario_id` y HU-02 filtrar por él; el contexto lo expone a todas las páginas. Persistir el `id` sobrevive al recargar. |
+| Menú estricto por rol: solicitante `HU-01/HU-02`, agente `HU-03`, validador `HU-07`, administrador `HU-09/HU-10/HU-11` | Refleja los actores del taller; HU-10 es solo administrador, por eso validador no ve dashboard sino `Por validar`. Rutas inexistentes como placeholder. |
+| Sin menú cuando no hay usuario | No exponer rutas de otros roles si la carga de usuarios falla. |
+| Limpieza Vite: fuera `App.css`, `src/assets/`, `README` genérico, `frontend/.gitkeep`; `index.html` `lang="es"` + `<title>CampusHelp</title>` | Restos de plantilla que no aportan al MVP y confunden la demo. |

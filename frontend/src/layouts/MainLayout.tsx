@@ -1,16 +1,6 @@
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-// @ts-expect-error The API module is JavaScript and does not provide a declaration file.
-import { obtenerUsuarios as obtenerUsuariosApi } from "../services/api";
-
-interface User {
-  id: number;
-  nombre: string;
-  correo: string;
-  rol: string;
-}
-
-const obtenerUsuarios = obtenerUsuariosApi as () => Promise<User[]>;
+import { useUsuario } from "../context/UsuarioContext";
 
 interface MenuItem {
   name: string;
@@ -22,32 +12,53 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
-    name: "Crear Caso",
+    name: "Registrar Caso",
     code: "HU-01",
     path: "/crear-caso",
     icon: "➕",
-    roles: ["solicitante", "agente", "administrador"],
+    roles: ["solicitante"],
   },
   {
-    name: "Mis Solicitudes",
+    name: "Mis Casos",
     code: "HU-02",
     path: "/mis-solicitudes",
     icon: "📂",
-    roles: ["solicitante", "agente", "validador", "administrador"],
+    roles: ["solicitante"],
   },
   {
-    name: "Bandeja de Soporte",
+    name: "Bandeja",
     code: "HU-03",
     path: "/bandeja-soporte",
     icon: "📥",
-    roles: ["agente", "administrador"],
+    roles: ["agente"],
   },
   {
-    name: "Dashboard de Indicadores",
+    name: "Por Validar",
+    code: "HU-07",
+    path: "/por-validar",
+    icon: "✅",
+    roles: ["validador"],
+  },
+  {
+    name: "Casos",
+    code: "HU-09",
+    path: "/casos",
+    icon: "🔎",
+    roles: ["administrador"],
+  },
+  {
+    name: "Indicadores",
     code: "HU-10",
-    path: "/dashboard",
+    path: "/indicadores",
     icon: "📊",
-    roles: ["validador", "administrador"],
+    roles: ["administrador"],
+  },
+  {
+    name: "Categorías",
+    code: "HU-11",
+    path: "/categorias",
+    icon: "🗂️",
+    roles: ["administrador"],
   },
 ];
 
@@ -91,55 +102,29 @@ function obtenerNombreRol(rol: string) {
 
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { usuario: selectedUser, usuarios: users, setUsuario, loading, error } =
+    useUsuario();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [errorUsers, setErrorUsers] = useState("");
-
-  useEffect(() => {
-    async function cargarUsuarios() {
-      try {
-        setLoadingUsers(true);
-        setErrorUsers("");
-
-        const usuarios = await obtenerUsuarios();
-
-        setUsers(usuarios);
-
-        if (usuarios.length > 0) {
-          setSelectedUser(usuarios[0]);
-        }
-      } catch (error) {
-        console.error("Error cargando usuarios:", error);
-        setErrorUsers("No se pudieron cargar los usuarios");
-      } finally {
-        setLoadingUsers(false);
-      }
-    }
-
-    cargarUsuarios();
-  }, []);
+  const loadingUsers = loading;
+  const errorUsers = error;
 
   const handleUserChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const userId = Number(event.target.value);
 
-    const user = users.find((user) => user.id === userId);
+    const user = users.find((u) => u.id === userId);
 
     if (user) {
-      setSelectedUser(user);
+      setUsuario(user);
     }
   };
 
   /*
-   * Si todavía no hay usuario seleccionado, mostramos todas
-   * las opciones para no dejar el menú vacío mientras carga
-   * la información del backend.
+   * Si no hay usuario (cargando o error), no mostrar el menú
+   * para no exponer rutas de otros roles.
    */
   const visibleMenuItems = selectedUser
     ? menuItems.filter((item) => item.roles.includes(selectedUser.rol))
-    : menuItems;
+    : [];
 
   return (
     <div className="min-h-screen bg-slate-50">
