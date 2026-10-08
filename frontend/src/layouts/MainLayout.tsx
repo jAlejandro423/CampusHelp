@@ -1,158 +1,204 @@
 import { type ChangeEvent, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-
-interface User {
-  id: number;
-  name: string;
-  role: string;
-  color: string;
-}
+import { useUsuario } from "../context/UsuarioContext";
 
 interface MenuItem {
   name: string;
   code: string;
   path: string;
   icon: string;
+  roles: string[];
 }
 
-const users: User[] = [
+const menuItems: MenuItem[] = [
   {
-    id: 1,
-    name: "Juan Pérez",
-    role: "Solicitante",
-    color: "bg-blue-100 text-blue-700",
-  },
-  {
-    id: 2,
-    name: "María Gómez",
-    role: "Agente de Soporte",
-    color: "bg-green-100 text-green-700",
-  },
-  {
-    id: 3,
-    name: "Carlos López",
-    role: "Validador de Soluciones",
-    color: "bg-purple-100 text-purple-700",
-  },
-  {
-    id: 4,
-    name: "Ana Torres",
-    role: "Administradora",
-    color: "bg-orange-100 text-orange-700",
-  },
-];
-
-const menuItems = [
-  {
-    name: "Crear Caso",
+    name: "Registrar Caso",
     code: "HU-01",
     path: "/crear-caso",
     icon: "➕",
+    roles: ["solicitante"],
   },
   {
-    name: "Mis Solicitudes",
+    name: "Mis Casos",
     code: "HU-02",
     path: "/mis-solicitudes",
     icon: "📂",
+    roles: ["solicitante"],
   },
   {
-    name: "Bandeja de Soporte",
+    name: "Bandeja",
     code: "HU-03",
     path: "/bandeja-soporte",
     icon: "📥",
+    roles: ["agente"],
   },
   {
-    name: "Dashboard de Indicadores",
+    name: "Por Validar",
+    code: "HU-07",
+    path: "/por-validar",
+    icon: "✅",
+    roles: ["validador"],
+  },
+  {
+    name: "Casos",
+    code: "HU-09",
+    path: "/casos",
+    icon: "🔎",
+    roles: ["administrador"],
+  },
+  {
+    name: "Indicadores",
     code: "HU-10",
-    path: "/dashboard",
+    path: "/indicadores",
     icon: "📊",
+    roles: ["administrador"],
+  },
+  {
+    name: "Categorías",
+    code: "HU-11",
+    path: "/categorias",
+    icon: "🗂️",
+    roles: ["administrador"],
   },
 ];
 
+function obtenerColorRol(rol: string) {
+  switch (rol) {
+    case "solicitante":
+      return "bg-blue-100 text-blue-700";
+
+    case "agente":
+      return "bg-green-100 text-green-700";
+
+    case "validador":
+      return "bg-purple-100 text-purple-700";
+
+    case "administrador":
+      return "bg-orange-100 text-orange-700";
+
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+
+function obtenerNombreRol(rol: string) {
+  switch (rol) {
+    case "solicitante":
+      return "Solicitante";
+
+    case "agente":
+      return "Agente de Soporte";
+
+    case "validador":
+      return "Validador de Soluciones";
+
+    case "administrador":
+      return "Administradora";
+
+    default:
+      return rol;
+  }
+}
+
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(users[0]);
+  const { usuario: selectedUser, usuarios: users, setUsuario, loading, error } =
+    useUsuario();
 
-  const handleUserChange = (event) => {
-    const user = users.find(
-      (user) => user.id === Number(event.target.value)
-    );
+  const loadingUsers = loading;
+  const errorUsers = error;
+
+  const handleUserChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const userId = Number(event.target.value);
+
+    const user = users.find((u) => u.id === userId);
 
     if (user) {
-      setSelectedUser(user);
+      setUsuario(user);
     }
   };
 
+  /*
+   * Si no hay usuario (cargando o error), no mostrar el menú
+   * para no exponer rutas de otros roles.
+   */
+  const visibleMenuItems = selectedUser
+    ? menuItems.filter((item) => item.roles.includes(selectedUser.rol))
+    : [];
+
   return (
     <div className="min-h-screen bg-slate-50">
-
       {/* HEADER */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-slate-200 shadow-sm">
-
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
-
-          {/* Logo */}
           <div className="flex items-center gap-3">
-
-            {/* Botón menú móvil */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden p-2 rounded-lg hover:bg-slate-100"
+              type="button"
             >
               ☰
             </button>
 
-            {/* Logo */}
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
               CH
             </div>
 
-            {/* Nombre */}
             <div className="hidden sm:block">
-              <h1 className="font-bold text-slate-900">
-                CampusHelp
-              </h1>
-
+              <h1 className="font-bold text-slate-900">CampusHelp</h1>
               <p className="text-xs text-slate-500">
                 Mesa de Servicios TI
               </p>
             </div>
-
           </div>
 
-          {/* Selector de usuario */}
+          {/* USUARIO */}
           <div className="flex items-center gap-3">
-
-            {/* Usuario y rol */}
             <div className="hidden md:block text-right">
+              {loadingUsers ? (
+                <p className="text-sm text-slate-400">
+                  Cargando usuario...
+                </p>
+              ) : selectedUser ? (
+                <>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {selectedUser.nombre}
+                  </p>
 
-              <p className="text-sm font-semibold text-slate-800">
-                {selectedUser.name}
-              </p>
-
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${selectedUser.color}`}
-              >
-                {selectedUser.role}
-              </span>
-
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${obtenerColorRol(
+                      selectedUser.rol
+                    )}`}
+                  >
+                    {obtenerNombreRol(selectedUser.rol)}
+                  </span>
+                </>
+              ) : (
+                <p className="text-sm text-red-500">
+                  {errorUsers || "Sin usuario"}
+                </p>
+              )}
             </div>
 
-            {/* Select */}
             <select
-              value={selectedUser.id}
+              value={selectedUser?.id ?? ""}
               onChange={handleUserChange}
-              className="max-w-[220px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={loadingUsers || users.length === 0}
+              className="max-w-[260px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
             >
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} — {user.role}
-                </option>
-              ))}
+              {loadingUsers ? (
+                <option value="">Cargando usuarios...</option>
+              ) : users.length === 0 ? (
+                <option value="">No hay usuarios disponibles</option>
+              ) : (
+                users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.nombre} — {obtenerNombreRol(user.rol)}
+                  </option>
+                ))
+              )}
             </select>
-
           </div>
-
         </div>
       </header>
 
@@ -166,50 +212,52 @@ function MainLayout() {
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-
         <div className="h-full flex flex-col">
-
-          {/* Usuario actual */}
+          {/* USUARIO ACTUAL */}
           <div className="p-5 border-b border-slate-100">
-
             <p className="text-xs font-semibold uppercase text-slate-400 mb-3">
               Usuario actual
             </p>
 
             <div className="flex items-center gap-3">
-
               <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-xl">
                 👤
               </div>
 
               <div>
+                {selectedUser ? (
+                  <>
+                    <p className="font-semibold text-slate-800">
+                      {selectedUser.nombre}
+                    </p>
 
-                <p className="font-semibold text-slate-800">
-                  {selectedUser.name}
-                </p>
-
-                <span
-                  className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${selectedUser.color}`}
-                >
-                  {selectedUser.role}
-                </span>
-
+                    <span
+                      className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${obtenerColorRol(
+                        selectedUser.rol
+                      )}`}
+                    >
+                      {obtenerNombreRol(selectedUser.rol)}
+                    </span>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400">
+                    {loadingUsers
+                      ? "Cargando..."
+                      : "Usuario no disponible"}
+                  </p>
+                )}
               </div>
-
             </div>
           </div>
 
-          {/* Navegación */}
+          {/* NAVEGACIÓN */}
           <nav className="flex-1 p-4">
-
             <p className="px-3 mb-3 text-xs font-semibold uppercase text-slate-400">
               Navegación
             </p>
 
             <div className="space-y-1">
-
-              {menuItems.map((item) => (
-
+              {visibleMenuItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -226,15 +274,11 @@ function MainLayout() {
                     `
                   }
                 >
-
-                  {/* Icono */}
                   <span className="text-xl w-7 text-center">
                     {item.icon}
                   </span>
 
-                  {/* Texto */}
                   <div>
-
                     <p className="text-sm font-semibold">
                       {item.name}
                     </p>
@@ -242,21 +286,15 @@ function MainLayout() {
                     <p className="text-xs opacity-60">
                       {item.code}
                     </p>
-
                   </div>
-
                 </NavLink>
-
               ))}
-
             </div>
           </nav>
 
-          {/* Footer */}
+          {/* FOOTER */}
           <div className="p-4 border-t border-slate-100">
-
             <div className="p-3 rounded-xl bg-slate-50">
-
               <p className="text-xs font-semibold text-slate-700">
                 CampusHelp
               </p>
@@ -264,15 +302,12 @@ function MainLayout() {
               <p className="text-xs text-slate-400 mt-1">
                 Sistema de Mesa de Servicios Tecnológicos Universitarios
               </p>
-
             </div>
-
           </div>
-
         </div>
       </aside>
 
-      {/* OVERLAY PARA MÓVIL */}
+      {/* OVERLAY MOBILE */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -280,17 +315,12 @@ function MainLayout() {
         />
       )}
 
-      {/* CONTENIDO PRINCIPAL */}
+      {/* CONTENIDO */}
       <main className="pt-16 lg:pl-72 min-h-screen">
-
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-
           <Outlet />
-
         </div>
-
       </main>
-
     </div>
   );
 }
