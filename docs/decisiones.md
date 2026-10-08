@@ -80,3 +80,17 @@ Implementado en `db/seeds.sql`. Se ejecuta después del esquema: `mysql < db/sch
 | `area_id` entero positivo (400 si no) | Evita SQL inválido; siempre con consulta parametrizada (`?`). |
 | Filtro sin coincidencias → `200 []` | Semántica de filtro, no de recurso inexistente; el frontend muestra lista vacía. |
 | Sin `password`/campos sensibles en usuarios | La tabla no los tiene; se exponen `id, nombre, correo, rol` para el selector. |
+
+## D-07 · POST /api/casos – registro HU-01 (Issue #23)
+
+Contrato: `POST /api/casos` con `{ tipo, titulo, descripcion, prioridad, usuario_id, categoria_id, area_id }` → `201` con el caso creado (incluye `id`, `estado: 'Pendiente'` y `fecha_creacion` automática).
+
+| Decisión | Motivo |
+|---|---|
+| `area_id` obligatorio y cruce categoría ∈ área | El taller exige área obligatoria; el formulario envía área + categoría y el backend lo verifica. |
+| Todos los errores juntos en `400 { error, detalles: [...] }` | El formulario muestra todo lo que falta de una vez (tipo, título, descripción, prioridad, referencias). |
+| Referencias inexistentes/inactivas → `400`, no `404` | Son errores del cuerpo enviado, según pide la issue; `404` queda para rutas. |
+| `descripcion` con `trim` y mínimo 10 | Regla HU-01; el `trim` evita que 10 espacios pasen la validación. |
+| `INSERT` caso + `INSERT` historial (`creacion`, `NULL → Pendiente`) en transacción | Si el historial falla, el caso se revierte: nunca quedan casos sin evento (CP-01/CP-04). |
+| `evento: 'creacion'` en minúsculas | Igual que los seeds (D-04) para que filtros e indicadores no distingan. |
+| Cualquier `usuario` activo puede registrar | No se restringe a rol solicitante para no bloquear la demo con el selector de D-02. |
