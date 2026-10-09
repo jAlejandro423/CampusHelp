@@ -95,3 +95,22 @@ Implementado en `db/seeds.sql`. Se ejecuta después del esquema: `mysql < db/sch
 | Menú estricto por rol: solicitante `HU-01/HU-02`, agente `HU-03`, validador `HU-07`, administrador `HU-09/HU-10/HU-11` | Refleja los actores del taller; HU-10 es solo administrador, por eso validador no ve dashboard sino `Por validar`. Rutas inexistentes como placeholder. |
 | Sin menú cuando no hay usuario | No exponer rutas de otros roles si la carga de usuarios falla. |
 | Limpieza Vite: fuera `App.css`, `src/assets/`, `README` genérico, `frontend/.gitkeep`; `index.html` `lang="es"` + `<title>CampusHelp</title>` | Restos de plantilla que no aportan al MVP y confunden la demo. |
+
+## D-08 · Refinamiento del Sprint 1 (2026-10-08 · Issue #10)
+
+Las fichas de cada historia están en `docs/historias/HU-01.md`, `HU-02.md`, `HU-03.md` y `HU-05.md`. La matriz de trazabilidad está en `docs/trazabilidad.md`.
+
+| Decisión | Motivo |
+|---|---|
+| Catálogo de eventos de `historial` en minúsculas y `snake_case`: `creacion`, `asignacion`, `cambio_estado`, `envio_validacion`, `devolucion`, `cierre` | Es el que ya usa `seeds.sql`. Un solo vocabulario permite filtrar el historial (HU-08) y calcular tiempos sin traducir valores. Reemplaza el `CREADO` del CLAUDE.md. |
+| Un solo `GET /api/casos` con filtros combinables (`usuario_id`, `bandeja=1` y luego los de HU-09) y la misma forma de fila: nombres de área, categoría, solicitante y agente | Sirve a HU-02, 03 y 09 con una sola consulta parametrizada y un solo tipo en el frontend. |
+| `bandeja=1`: todos los casos no `Cerrada`, ordenados por prioridad y luego por antigüedad | "Pendientes" significa trabajo abierto, no solo el estado `Pendiente`. |
+| `POST /api/casos` recibe `usuario_id` y el backend exige que exista, esté activo y tenga rol **`solicitante`** (solo el solicitante registra casos) | Con la autenticación simulada (D-02) el rol solo se puede comprobar así. Otro rol o un usuario inválido devuelve 400. |
+| `PATCH /api/casos/:id/estado` recibe `usuario_id` y el backend exige que exista, esté activo y tenga rol **`agente`** | Mismo motivo. Otro rol o un usuario inválido devuelve 400. |
+| Un error de validación responde `400` con `error: "Datos inválidos"` (texto fijo) y un elemento en `detalles` por cada fallo | El frontend muestra la lista de `detalles` sin depender del texto de `error`. Así backend y frontend no tienen que coordinar mensajes. |
+| Área y categoría inactivas se rechazan al registrar | Coherente con D-06 y con HU-11. |
+| El endpoint genérico de estado solo avanza un paso; `Cerrada` y la devolución se rechazan con 409 y quedan para HU-07 | La devolución exige motivo y validador. Cerrar solo por validación es una regla del taller. |
+| Pasar al mismo estado → 409 | No es una transición del mapa. |
+| Los controles de estado (#33) van en las filas de la bandeja durante el Sprint 1 | `GET /api/casos/:id` (detalle) es de HU-12, en el Sprint 3. |
+
+**Pendiente para el refinement del Sprint 2:** en `seeds.sql`, los eventos `asignacion` de los casos 4, 5 y 6 pasan de `Pendiente` a `En atención`, algo que el mapa de estados no permite. Cuando se decida si asignarse un caso lo mueve a `En análisis` (HU-04), hay que alinear los seeds con el mapa.
