@@ -81,16 +81,50 @@ Implementado en `db/seeds.sql`. Se ejecuta después del esquema: `mysql < db/sch
 | Filtro sin coincidencias → `200 []` | Semántica de filtro, no de recurso inexistente; el frontend muestra lista vacía. |
 | Sin `password`/campos sensibles en usuarios | La tabla no los tiene; se exponen `id, nombre, correo, rol` para el selector. |
 
-## D-07 · POST /api/casos – registro HU-01 (Issue #23)
+## D-07 · Frontend TypeScript + Tailwind + contexto de usuario (2026-10-06 · Issue #8)
+
+**Contexto:** el scaffold inicial (#8) dejó `API_URL` sin `.env.example`, el usuario en `useState` local de `MainLayout` y menú por rol desalineado con HU-07/HU-09/HU-10/HU-11.
+
+| Decisión | Motivo |
+|---|---|
+| TypeScript en frontend (`.tsx`, `client.ts` tipado) | El template Vite ya lo trae; tipos `Usuario/Area/Categoria` evitan el `@ts-expect-error` y detectan errores de `rol`/`area_id` en compilación. Backend sigue en JS, el contrato es JSON. |
+| Tailwind CSS v4 vía `@tailwindcss/vite` + `@import "tailwindcss"` | Utilidades en clases (`bg-slate-50`, `rounded-2xl`) sin CSS manual; coherente con el layout existente. |
+| `frontend/.env.example` con `VITE_API_URL=http://localhost:3000` + fallback `|| "http://localhost:3000"` en `src/api/client.ts` | Sin el example, `import.meta.env.VITE_API_URL` queda `undefined` y el fetch va a `undefined/api/...`. El fallback permite clonar y correr sin `.env`. |
+| `src/api/client.ts` con `URLSearchParams` | Query params (`?rol=`, `?area_id=`) construidos de forma segura; reemplaza `src/services/api.js`. |
+| `src/context/UsuarioContext.tsx` + `useUsuario() { usuario, usuarios, setUsuario }` con `localStorage campushelp_usuario_id` | HU-01 necesita `usuario_id` y HU-02 filtrar por él; el contexto lo expone a todas las páginas. Persistir el `id` sobrevive al recargar. |
+| Menú estricto por rol: solicitante `HU-01/HU-02`, agente `HU-03`, validador `HU-07`, administrador `HU-09/HU-10/HU-11` | Refleja los actores del taller; HU-10 es solo administrador, por eso validador no ve dashboard sino `Por validar`. Rutas inexistentes como placeholder. |
+| Sin menú cuando no hay usuario | No exponer rutas de otros roles si la carga de usuarios falla. |
+| Limpieza Vite: fuera `App.css`, `src/assets/`, `README` genérico, `frontend/.gitkeep`; `index.html` `lang="es"` + `<title>CampusHelp</title>` | Restos de plantilla que no aportan al MVP y confunden la demo. |
+
+## D-08 · Refinamiento del Sprint 1 (2026-10-08 · Issue #10)
+
+Las fichas de cada historia están en `docs/historias/HU-01.md`, `HU-02.md`, `HU-03.md` y `HU-05.md`. La matriz de trazabilidad está en `docs/trazabilidad.md`.
+
+| Decisión | Motivo |
+|---|---|
+| Catálogo de eventos de `historial` en minúsculas y `snake_case`: `creacion`, `asignacion`, `cambio_estado`, `envio_validacion`, `devolucion`, `cierre` | Es el que ya usa `seeds.sql`. Un solo vocabulario permite filtrar el historial (HU-08) y calcular tiempos sin traducir valores. Reemplaza el `CREADO` del CLAUDE.md. |
+| Un solo `GET /api/casos` con filtros combinables (`usuario_id`, `bandeja=1` y luego los de HU-09) y la misma forma de fila: nombres de área, categoría, solicitante y agente | Sirve a HU-02, 03 y 09 con una sola consulta parametrizada y un solo tipo en el frontend. |
+| `bandeja=1`: todos los casos no `Cerrada`, ordenados por prioridad y luego por antigüedad | "Pendientes" significa trabajo abierto, no solo el estado `Pendiente`. |
+| `POST /api/casos` recibe `usuario_id` y el backend exige que exista, esté activo y tenga rol **`solicitante`** (solo el solicitante registra casos) | Con la autenticación simulada (D-02) el rol solo se puede comprobar así. Otro rol o un usuario inválido devuelve 400. |
+| `PATCH /api/casos/:id/estado` recibe `usuario_id` y el backend exige que exista, esté activo y tenga rol **`agente`** | Mismo motivo. Otro rol o un usuario inválido devuelve 400. |
+| Un error de validación responde `400` con `error: "Datos inválidos"` (texto fijo) y un elemento en `detalles` por cada fallo | El frontend muestra la lista de `detalles` sin depender del texto de `error`. Así backend y frontend no tienen que coordinar mensajes. |
+| Área y categoría inactivas se rechazan al registrar | Coherente con D-06 y con HU-11. |
+| El endpoint genérico de estado solo avanza un paso; `Cerrada` y la devolución se rechazan con 409 y quedan para HU-07 | La devolución exige motivo y validador. Cerrar solo por validación es una regla del taller. |
+| Pasar al mismo estado → 409 | No es una transición del mapa. |
+| Los controles de estado (#33) van en las filas de la bandeja durante el Sprint 1 | `GET /api/casos/:id` (detalle) es de HU-12, en el Sprint 3. |
+
+**Pendiente para el refinement del Sprint 2:** en `seeds.sql`, los eventos `asignacion` de los casos 4, 5 y 6 pasan de `Pendiente` a `En atención`, algo que el mapa de estados no permite. Cuando se decida si asignarse un caso lo mueve a `En análisis` (HU-04), hay que alinear los seeds con el mapa.
+
+## D-09 · POST /api/casos – registro HU-01 (Issue #23)
 
 Contrato: `POST /api/casos` con `{ tipo, titulo, descripcion, prioridad, usuario_id, categoria_id, area_id }` → `201` con el caso creado (incluye `id`, `estado: 'Pendiente'` y `fecha_creacion` automática).
 
 | Decisión | Motivo |
 |---|---|
-| `area_id` obligatorio y cruce categoría ∈ área | El taller exige área obligatoria; el formulario envía área + categoría y el backend lo verifica. |
-| Todos los errores juntos en `400 { error, detalles: [...] }` | El formulario muestra todo lo que falta de una vez (tipo, título, descripción, prioridad, referencias). |
-| Referencias inexistentes/inactivas → `400`, no `404` | Son errores del cuerpo enviado, según pide la issue; `404` queda para rutas. |
+| `area_id` obligatorio y cruce categoría ∈ área | El taller exige área obligatoria; el formulario envía área + categoría y el backend lo verifica (R1 de HU-01). |
+| Solo rol **`solicitante`** puede registrar (RN-04, R3 de HU-01) | Otro rol, usuario inexistente o inactivo → `400`. Definido en D-08 tras la revisión del #53. |
+| `400` con `error: "Datos inválidos"` fijo y un elemento en `detalles` por fallo | Texto oficial (R5 de HU-01, D-08); el frontend muestra la lista sin depender del texto. |
+| Referencias inexistentes/inactivas → `400`, no `404` | Son errores del cuerpo enviado; `404` queda para rutas. |
 | `descripcion` con `trim` y mínimo 10 | Regla HU-01; el `trim` evita que 10 espacios pasen la validación. |
 | `INSERT` caso + `INSERT` historial (`creacion`, `NULL → Pendiente`) en transacción | Si el historial falla, el caso se revierte: nunca quedan casos sin evento (CP-01/CP-04). |
-| `evento: 'creacion'` en minúsculas | Igual que los seeds (D-04) para que filtros e indicadores no distingan. |
-| Cualquier `usuario` activo puede registrar | No se restringe a rol solicitante para no bloquear la demo con el selector de D-02. |
+| `evento: 'creacion'` en minúsculas | Vocabulario único de D-08, igual que los seeds (D-04). |
