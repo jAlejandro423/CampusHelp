@@ -5,6 +5,10 @@
 -- pruebas (CP-01…CP-10) y demo del flujo completo.
 -- Convenciones: singular, snake_case, utf8mb4 (tildes en estados/categorías).
 
+-- DEF-01 (#56): ver db/schema.sql. Sin esto, el cliente mysql en Windows
+-- (cp850) guarda corruptos los textos con tildes.
+SET NAMES utf8mb4;
+
 USE campushelp;
 
 SET FOREIGN_KEY_CHECKS = 0;

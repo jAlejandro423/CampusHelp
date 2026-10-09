@@ -168,11 +168,21 @@ async function listarCasos(filtros) {
     parametros.push(usuarioId);
   }
 
-  const where = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
-  const [filas] = await pool.query(
-    `${SELECT_LISTADO} ${where} ORDER BY k.fecha_creacion DESC, k.id DESC`,
-    parametros
-  );
+  // HU-03 · Bandeja del agente: solo casos no cerrados, P1 → P3 y, dentro de
+  // cada prioridad, del más antiguo al más reciente. El ENUM prioridad se
+  // ordenó como ('P1','P2','P3'), así que MySQL lo ordena en ese orden.
+  // Cualquier valor de bandeja distinto de 1 se ignora (ficha HU-03).
+  const bandejaRaw = filtros ? filtros.bandeja : undefined;
+  const esBandeja = bandejaRaw === '1' || bandejaRaw === 1;
+  if (esBandeja) {
+    condiciones.push("k.estado <> 'Cerrada'");
+  }
+
+  const whereFinal = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
+  const orden = esBandeja
+    ? 'ORDER BY k.prioridad ASC, k.fecha_creacion ASC, k.id ASC'
+    : 'ORDER BY k.fecha_creacion DESC, k.id DESC';
+  const [filas] = await pool.query(`${SELECT_LISTADO} ${whereFinal} ${orden}`, parametros);
   return filas;
 }
 
