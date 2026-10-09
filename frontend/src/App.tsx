@@ -5,6 +5,7 @@ import MainLayout from "./layouts/MainLayout";
 import CrearCaso from "./pages/CrearCaso";
 import MisSolicitudes from "./pages/MisSolicitudes";
 import BandejaSoporte from "./pages/BandejaSoporte";
+import DetalleCaso from "./pages/DetalleCaso";
 import Dashboard from "./pages/Dashboard";
 import PorValidar from "./pages/PorValidar";
 import Casos from "./pages/Casos";
@@ -46,6 +47,11 @@ function App() {
             <Route
               path="/casos"
               element={<Casos />}
+            />
+
+            <Route
+              path="/casos/:id"
+              element={<DetalleCaso />}
             />
 
             <Route
