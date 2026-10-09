@@ -114,3 +114,17 @@ Las fichas de cada historia están en `docs/historias/HU-01.md`, `HU-02.md`, `HU
 | Los controles de estado (#33) van en las filas de la bandeja durante el Sprint 1 | `GET /api/casos/:id` (detalle) es de HU-12, en el Sprint 3. |
 
 **Pendiente para el refinement del Sprint 2:** en `seeds.sql`, los eventos `asignacion` de los casos 4, 5 y 6 pasan de `Pendiente` a `En atención`, algo que el mapa de estados no permite. Cuando se decida si asignarse un caso lo mueve a `En análisis` (HU-04), hay que alinear los seeds con el mapa.
+
+## D-09 · POST /api/casos – registro HU-01 (Issue #23)
+
+Contrato: `POST /api/casos` con `{ tipo, titulo, descripcion, prioridad, usuario_id, categoria_id, area_id }` → `201` con el caso creado (incluye `id`, `estado: 'Pendiente'` y `fecha_creacion` automática).
+
+| Decisión | Motivo |
+|---|---|
+| `area_id` obligatorio y cruce categoría ∈ área | El taller exige área obligatoria; el formulario envía área + categoría y el backend lo verifica (R1 de HU-01). |
+| Solo rol **`solicitante`** puede registrar (RN-04, R3 de HU-01) | Otro rol, usuario inexistente o inactivo → `400`. Definido en D-08 tras la revisión del #53. |
+| `400` con `error: "Datos inválidos"` fijo y un elemento en `detalles` por fallo | Texto oficial (R5 de HU-01, D-08); el frontend muestra la lista sin depender del texto. |
+| Referencias inexistentes/inactivas → `400`, no `404` | Son errores del cuerpo enviado; `404` queda para rutas. |
+| `descripcion` con `trim` y mínimo 10 | Regla HU-01; el `trim` evita que 10 espacios pasen la validación. |
+| `INSERT` caso + `INSERT` historial (`creacion`, `NULL → Pendiente`) en transacción | Si el historial falla, el caso se revierte: nunca quedan casos sin evento (CP-01/CP-04). |
+| `evento: 'creacion'` en minúsculas | Vocabulario único de D-08, igual que los seeds (D-04). |
