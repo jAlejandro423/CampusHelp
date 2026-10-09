@@ -140,3 +140,13 @@ Un solo endpoint con filtros combinables (`AND`) para HU-02 (`?usuario_id=`), HU
 | `usuario_id` válido sin casos (o inexistente) → `200 []` | Semántica de filtro, igual que D-06; el frontend muestra el estado vacío (E2). |
 | Orden `fecha_creacion DESC, id DESC` | Lo más reciente primero (E4); el `id` desempata fechas iguales. |
 | Se muestran todos los estados, incluido `Cerrada` | Regla 4 de HU-02; el estado siempre se lee de MySQL en cada carga. |
+
+## D-12 · SET NAMES utf8mb4 en scripts SQL (DEF-01 · Issue #56)
+
+Se numera D-12 porque D-11 ya lo usa la bandeja (#29, en revisión al crear esta rama).
+
+| Decisión | Motivo |
+|---|---|
+| `SET NAMES utf8mb4;` como primera sentencia de `db/schema.sql` y `db/seeds.sql` | El cliente `mysql` en Windows negocia cp850 y corrompe tildes, incluidos los valores del `ENUM caso.estado`; con la sentencia el archivo se auto-protege sin depender de flags. |
+| Verificado por bytes, no a ojo: `HEX('Gómez')` debe ser `…47C3B36D…` y el `ENUM` mostrar tildes | Así se detectó (E2 94 9C en vez de C3 B3) y así se comprobó el arreglo + una transición a `En análisis` (CP-04). |
+| El hint `--default-character-set=utf8mb4` para el README queda en la #39 | Esa issue documenta instalación/ejecución; no se pisa su alcance. |
