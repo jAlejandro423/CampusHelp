@@ -128,3 +128,15 @@ Contrato: `POST /api/casos` con `{ tipo, titulo, descripcion, prioridad, usuario
 | `descripcion` con `trim` y mínimo 10 | Regla HU-01; el `trim` evita que 10 espacios pasen la validación. |
 | `INSERT` caso + `INSERT` historial (`creacion`, `NULL → Pendiente`) en transacción | Si el historial falla, el caso se revierte: nunca quedan casos sin evento (CP-01/CP-04). |
 | `evento: 'creacion'` en minúsculas | Vocabulario único de D-08, igual que los seeds (D-04). |
+
+## D-10 · GET /api/casos – listado HU-02 reutilizable (Issue #26)
+
+Un solo endpoint con filtros combinables (`AND`) para HU-02 (`?usuario_id=`), HU-03 (`bandeja=1`, issue #29) y HU-09 (filtros de estado/tipo/área/categoría/prioridad). Forma de fila exacta de la ficha HU-02.
+
+| Decisión | Motivo |
+|---|---|
+| `JOIN` a categoría, área, solicitante y `LEFT JOIN` al agente | La fila trae `area`, `categoria`, `solicitante` y `agente` (`null` si no hay asignado); una sola consulta, sin N+1. |
+| `usuario_id` presente pero inválido → `400`; ausente → sin filtro | La ficha HU-02 exige `400` con entero no positivo; ausente no filtra para que `bandeja=1` funcione sin usuario. |
+| `usuario_id` válido sin casos (o inexistente) → `200 []` | Semántica de filtro, igual que D-06; el frontend muestra el estado vacío (E2). |
+| Orden `fecha_creacion DESC, id DESC` | Lo más reciente primero (E4); el `id` desempata fechas iguales. |
+| Se muestran todos los estados, incluido `Cerrada` | Regla 4 de HU-02; el estado siempre se lee de MySQL en cada carga. |
