@@ -140,3 +140,17 @@ Un solo endpoint con filtros combinables (`AND`) para HU-02 (`?usuario_id=`), HU
 | `usuario_id` válido sin casos (o inexistente) → `200 []` | Semántica de filtro, igual que D-06; el frontend muestra el estado vacío (E2). |
 | Orden `fecha_creacion DESC, id DESC` | Lo más reciente primero (E4); el `id` desempata fechas iguales. |
 | Se muestran todos los estados, incluido `Cerrada` | Regla 4 de HU-02; el estado siempre se lee de MySQL en cada carga. |
+
+## D-13 · PATCH estado con máquina única (Issue #32)
+
+Se numera D-13 porque D-11 (#29) y D-12 (#56) están en revisión al crear esta rama. `PATCH /api/casos/:id/estado` con `{ estado, usuario_id, detalle? }` → `200` con el caso actualizado.
+
+| Decisión | Motivo |
+|---|---|
+| Mapa en `services/estados.js` (`TRANSICIONES`), exportado para HU-04/06/07 | Una sola fuente de verdad; el genérico solo avanza un paso, `Cerrada` y devolución quedan a HU-07. |
+| Lógica en `estados.js`, sin tocar `casoService.js` | Evita choques con la rama #29, que edita ese archivo. |
+| `SELECT … FOR UPDATE` + `UPDATE` + `INSERT historial` en transacción | Dos cambios simultáneos no se pisan (regla 7 de HU-05); `cambio_estado` con anterior/nuevo/usuario/detalle. |
+| Solo rol **`agente`** (D-08); `detalle` opcional | Quien avanza el caso es el agente; el motivo queda para la devolución de HU-07. |
+| Mismo estado, salto de pasos, `Cerrada` o devolver → `409` con transiciones permitidas en `detalles` | El frontend dibuja solo los botones válidos (E5) y explica cada rechazo (CP-05). |
+| Caso inexistente → `404`; cuerpo inválido → `400 Datos inválidos` | Respeta la tabla de excepciones de HU-05. |
+| Sin tocar `fecha_asignacion/cierre` aquí | El cierre solo llega por validación (RN-13, HU-07, Sprint 2). |
