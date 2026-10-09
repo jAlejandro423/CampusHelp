@@ -141,9 +141,28 @@ Un solo endpoint con filtros combinables (`AND`) para HU-02 (`?usuario_id=`), HU
 | Orden `fecha_creacion DESC, id DESC` | Lo más reciente primero (E4); el `id` desempata fechas iguales. |
 | Se muestran todos los estados, incluido `Cerrada` | Regla 4 de HU-02; el estado siempre se lee de MySQL en cada carga. |
 
+## D-11 · Bandeja del agente – ?bandeja=1 (Issue #29)
+
+`GET /api/casos?bandeja=1` sobre el mismo SELECT de D-10, combinable con `usuario_id` y los futuros filtros HU-09.
+
+| Decisión | Motivo |
+|---|---|
+| `estado <> 'Cerrada'` como condición AND | "Pendientes" son todos los no cerrados (R1 de HU-03); se combina con el resto de filtros. |
+| Orden `prioridad ASC, fecha_creacion ASC, id ASC` | P1 → P3 y el más antiguo primero (E1, E4); el `ENUM('P1','P2','P3')` ya ordena así por posición. |
+| Solo el valor `1` activa la bandeja; otro valor se ignora | Excepción de la ficha HU-03: `?bandeja=0` se comporta como listado general. |
+| Sin restricción por rol en el backend | Regla 4 de HU-03: con autenticación simulada la restricción vive en el menú del frontend. |
+
+## D-12 · SET NAMES utf8mb4 en scripts SQL (DEF-01 · Issue #56)
+
+| Decisión | Motivo |
+|---|---|
+| `SET NAMES utf8mb4;` como primera sentencia de `db/schema.sql` y `db/seeds.sql` | El cliente `mysql` en Windows negocia cp850 y corrompe tildes, incluidos los valores del `ENUM caso.estado`; con la sentencia el archivo se auto-protege sin depender de flags. |
+| Verificado por bytes, no a ojo: `HEX('Gómez')` debe ser `…47C3B36D…` y el `ENUM` mostrar tildes | Así se detectó (E2 94 9C en vez de C3 B3) y así se comprobó el arreglo + una transición a `En análisis` (CP-04). |
+| El hint `--default-character-set=utf8mb4` para el README queda en la #39 | Esa issue documenta instalación/ejecución; no se pisa su alcance. |
+
 ## D-13 · PATCH estado con máquina única (Issue #32)
 
-Se numera D-13 porque D-11 (#29) y D-12 (#56) están en revisión al crear esta rama. `PATCH /api/casos/:id/estado` con `{ estado, usuario_id, detalle? }` → `200` con el caso actualizado.
+`PATCH /api/casos/:id/estado` con `{ estado, usuario_id, detalle? }` → `200` con el caso actualizado.
 
 | Decisión | Motivo |
 |---|---|
