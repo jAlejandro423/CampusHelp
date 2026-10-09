@@ -140,3 +140,14 @@ Un solo endpoint con filtros combinables (`AND`) para HU-02 (`?usuario_id=`), HU
 | `usuario_id` válido sin casos (o inexistente) → `200 []` | Semántica de filtro, igual que D-06; el frontend muestra el estado vacío (E2). |
 | Orden `fecha_creacion DESC, id DESC` | Lo más reciente primero (E4); el `id` desempata fechas iguales. |
 | Se muestran todos los estados, incluido `Cerrada` | Regla 4 de HU-02; el estado siempre se lee de MySQL en cada carga. |
+
+## D-11 · Bandeja del agente – ?bandeja=1 (Issue #29)
+
+`GET /api/casos?bandeja=1` sobre el mismo SELECT de D-10, combinable con `usuario_id` y los futuros filtros HU-09.
+
+| Decisión | Motivo |
+|---|---|
+| `estado <> 'Cerrada'` como condición AND | "Pendientes" son todos los no cerrados (R1 de HU-03); se combina con el resto de filtros. |
+| Orden `prioridad ASC, fecha_creacion ASC, id ASC` | P1 → P3 y el más antiguo primero (E1, E4); el `ENUM('P1','P2','P3')` ya ordena así por posición. |
+| Solo el valor `1` activa la bandeja; otro valor se ignora | Excepción de la ficha HU-03: `?bandeja=0` se comporta como listado general. |
+| Sin restricción por rol en el backend | Regla 4 de HU-03: con autenticación simulada la restricción vive en el menú del frontend. |
