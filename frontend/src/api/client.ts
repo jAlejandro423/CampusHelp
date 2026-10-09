@@ -150,27 +150,9 @@ export function obtenerCasos(): Promise<CasoResumen[]> {
   return getJson<CasoResumen[]>("/api/casos");
 }
 
-const ORDEN_PRIORIDAD: Record<PrioridadCaso, number> = {
-  P1: 0,
-  P2: 1,
-  P3: 2,
-};
-
-// HU-03 · Bandeja del agente: casos no cerrados ordenados por prioridad.
-// El BACK #29 aún no expone filtro/orden en servidor (GET /api/casos solo
-// ordena por fecha), así que se filtra/ordena en cliente. Cuando #29
-// aterrice, cambiar esta función al query de servidor sin tocar las páginas.
-export async function obtenerBandeja(): Promise<CasoResumen[]> {
-  const casos = await obtenerCasos();
-  return casos
-    .filter((c) => c.estado !== "Cerrada")
-    .sort((a, b) => {
-      const pa = ORDEN_PRIORIDAD[a.prioridad] ?? 99;
-      const pb = ORDEN_PRIORIDAD[b.prioridad] ?? 99;
-      if (pa !== pb) return pa - pb;
-      return (
-        new Date(b.fecha_creacion).getTime() -
-        new Date(a.fecha_creacion).getTime()
-      );
-    });
+// HU-03 · Bandeja del agente: usa el BACK #29.
+// GET /api/casos?bandeja=1 excluye Cerrada y ordena por prioridad
+// (P1→P3) y antigüedad (más antiguo primero). Las reglas viven en el backend.
+export function obtenerBandeja(): Promise<CasoResumen[]> {
+  return getJson<CasoResumen[]>("/api/casos?bandeja=1");
 }

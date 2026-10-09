@@ -1,46 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { obtenerBandeja } from "../api/client";
 import type { CasoResumen } from "../api/client";
-
-function colorEstado(estado: string) {
-  switch (estado) {
-    case "Pendiente":
-      return "bg-amber-100 text-amber-800";
-    case "En análisis":
-      return "bg-blue-100 text-blue-700";
-    case "En atención":
-      return "bg-indigo-100 text-indigo-700";
-    case "En validación":
-      return "bg-purple-100 text-purple-700";
-    case "Cerrada":
-      return "bg-green-100 text-green-700";
-    default:
-      return "bg-slate-100 text-slate-700";
-  }
-}
-
-function colorPrioridad(prioridad: string) {
-  switch (prioridad) {
-    case "P1":
-      return "bg-red-100 text-red-700";
-    case "P2":
-      return "bg-amber-100 text-amber-800";
-    case "P3":
-      return "bg-slate-100 text-slate-600";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
-}
-
-function formatearFecha(iso: string) {
-  const fecha = new Date(iso);
-  if (Number.isNaN(fecha.getTime())) return iso;
-  return fecha.toLocaleString("es-CO", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-}
+import {
+  colorEstado,
+  colorPrioridad,
+  formatearFecha,
+} from "../components/badges";
 
 function BandejaSoporte() {
   const [casos, setCasos] = useState<CasoResumen[]>([]);
@@ -82,9 +47,7 @@ function BandejaSoporte() {
             {error}
           </div>
         ) : casos.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No hay casos abiertos en la bandeja.
-          </p>
+          <p className="text-sm text-slate-500">No hay casos pendientes</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -92,11 +55,13 @@ function BandejaSoporte() {
                 <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
                   <th className="py-2 pr-4">ID</th>
                   <th className="py-2 pr-4">Título</th>
+                  <th className="py-2 pr-4">Tipo</th>
+                  <th className="py-2 pr-4">Área / Categoría</th>
+                  <th className="py-2 pr-4">Solicitante</th>
                   <th className="py-2 pr-4">Prioridad</th>
                   <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Agente</th>
-                  <th className="py-2 pr-4">Fecha</th>
-                  <th className="py-2">Detalle</th>
+                  <th className="py-2">Fecha</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,6 +78,13 @@ function BandejaSoporte() {
                       #{caso.id}
                     </td>
                     <td className="py-3 pr-4 text-slate-800">{caso.titulo}</td>
+                    <td className="py-3 pr-4 text-slate-600">{caso.tipo}</td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {caso.area} / {caso.categoria}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {caso.solicitante}
+                    </td>
                     <td className="py-3 pr-4">
                       <span
                         className={`inline-block rounded-full px-2 py-1 text-xs font-bold ${colorPrioridad(caso.prioridad)}`}
@@ -130,16 +102,8 @@ function BandejaSoporte() {
                     <td className="py-3 pr-4 text-slate-600">
                       {caso.agente ?? "Sin asignar"}
                     </td>
-                    <td className="py-3 pr-4 text-slate-500">
+                    <td className="py-3 text-slate-500">
                       {formatearFecha(caso.fecha_creacion)}
-                    </td>
-                    <td className="py-3">
-                      <Link
-                        to={`/casos/${caso.id}`}
-                        className="font-semibold text-blue-600 hover:text-blue-800"
-                      >
-                        Ver
-                      </Link>
                     </td>
                   </tr>
                 ))}
