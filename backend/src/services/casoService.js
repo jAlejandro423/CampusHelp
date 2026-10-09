@@ -57,11 +57,15 @@ async function crearCaso(datos) {
   let categoria = null;
 
   if (usuarioId !== null) {
-    const [filas] = await pool.query('SELECT id, activo FROM usuario WHERE id = ?', [usuarioId]);
+    const [filas] = await pool.query('SELECT id, rol, activo FROM usuario WHERE id = ?', [
+      usuarioId,
+    ]);
     if (filas.length === 0) {
       errores.push('El usuario indicado no existe.');
     } else if (!filas[0].activo) {
       errores.push('El usuario indicado está inactivo.');
+    } else if (filas[0].rol !== 'solicitante') {
+      errores.push('Solo un usuario con rol solicitante puede registrar casos.');
     }
   }
 
@@ -94,7 +98,7 @@ async function crearCaso(datos) {
   }
 
   if (errores.length > 0) {
-    throw createError(400, 'Datos del caso inválidos', errores);
+    throw createError(400, 'Datos inválidos', errores);
   }
 
   const conexion = await pool.getConnection();
