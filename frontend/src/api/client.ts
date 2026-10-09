@@ -122,3 +122,26 @@ export async function crearCaso(payload: CrearCasoPayload): Promise<CasoCreado> 
 
   return response.json() as Promise<CasoCreado>;
 }
+
+export interface CasoResumen {
+  id: number;
+  tipo: TipoCaso;
+  titulo: string;
+  prioridad: PrioridadCaso;
+  estado: string;
+  fecha_creacion: string;
+  area_id: number;
+  area: string;
+  categoria_id: number;
+  categoria: string;
+  usuario_id: number;
+  solicitante: string;
+  agente_id: number | null;
+  agente: string | null;
+}
+
+export function obtenerMisCasos(usuarioId: number): Promise<CasoResumen[]> {
+  const params = new URLSearchParams();
+  params.set("usuario_id", String(usuarioId));
+  return getJson<CasoResumen[]>(`/api/casos?${params.toString()}`);
+}
