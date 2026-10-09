@@ -137,4 +137,43 @@ async function crearCaso(datos) {
   }
 }
 
-module.exports = { crearCaso };
+// HU-02 · Mis casos. HU-03 (bandeja) y HU-09 (filtros) reutilizarán este
+// mismo SELECT agregando condiciones con AND (ver D-10).
+// Forma de fila según la ficha HU-02: nombres de área, categoría,
+// solicitante y agente (NULL cuando no hay asignado).
+const SELECT_LISTADO = `
+  SELECT k.id, k.tipo, k.titulo, k.prioridad, k.estado, k.fecha_creacion,
+         a.id AS area_id, a.nombre AS area,
+         c.id AS categoria_id, c.nombre AS categoria,
+         u.id AS usuario_id, u.nombre AS solicitante,
+         g.id AS agente_id, g.nombre AS agente
+  FROM caso k
+  INNER JOIN categoria c ON c.id = k.categoria_id
+  INNER JOIN area a ON a.id = c.area_id
+  INNER JOIN usuario u ON u.id = k.usuario_id
+  LEFT JOIN usuario g ON g.id = k.agente_id
+`;
+
+async function listarCasos(filtros) {
+  const condiciones = [];
+  const parametros = [];
+
+  const usuarioIdRaw = filtros ? filtros.usuario_id : undefined;
+  if (usuarioIdRaw !== undefined && usuarioIdRaw !== '') {
+    const usuarioId = aEnteroPositivo(usuarioIdRaw);
+    if (usuarioId === null) {
+      throw createError(400, 'Datos inválidos', ['usuario_id debe ser un entero positivo.']);
+    }
+    condiciones.push('k.usuario_id = ?');
+    parametros.push(usuarioId);
+  }
+
+  const where = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
+  const [filas] = await pool.query(
+    `${SELECT_LISTADO} ${where} ORDER BY k.fecha_creacion DESC, k.id DESC`,
+    parametros
+  );
+  return filas;
+}
+
+module.exports = { crearCaso, listarCasos };
