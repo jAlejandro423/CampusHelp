@@ -3,6 +3,10 @@
 -- Ejecución desde cero: DROP + CREATE (idempotente para entorno local/demo).
 -- Convenciones: tablas y columnas en snake_case y singular.
 
+-- DEF-01 (#56): el cliente mysql en Windows usa cp850 por defecto y corrompe
+-- las tildes (incluidos los valores del ENUM caso.estado). Fija la conexión.
+SET NAMES utf8mb4;
+
 DROP DATABASE IF EXISTS campushelp;
 CREATE DATABASE campushelp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE campushelp;
