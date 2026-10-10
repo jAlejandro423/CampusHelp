@@ -7,7 +7,7 @@ Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantall
 | HU | Actor | Reglas de negocio | Endpoint | Pantalla | Casos de prueba | Issues | Estado del refinamiento |
 |---|---|---|---|---|---|---|---|
 | HU-01 Registrar incidente o solicitud | Solicitante | RN-01, RN-02, RN-03, RN-04, RN-10 | `POST /api/casos`, `GET /api/areas`, `GET /api/categorias?area_id=` | `/crear-caso` | CP-01, CP-02, CP-03 | #11 · #23 #24 #25 | Refinada ([ficha](historias/HU-01.md)) |
-| HU-02 Consultar mis casos | Solicitante | RN-05 | `GET /api/casos?usuario_id=` | `/mis-solicitudes` | Los de #28 | #12 · #26 #27 #28 | Refinada ([ficha](historias/HU-02.md)) |
+| HU-02 Consultar mis casos | Solicitante | RN-05 | `GET /api/casos?usuario_id=` | `/mis-solicitudes` | E1–E4 de HU-02 (#28) | #12 · #26 #27 #28 | Refinada ([ficha](historias/HU-02.md)) |
 | HU-03 Bandeja de casos pendientes | Agente | RN-06 | `GET /api/casos?bandeja=1` | `/bandeja-soporte` | CP-01 y los de #31 | #13 · #29 #30 #31 | Refinada ([ficha](historias/HU-03.md)) |
 | HU-05 Cambiar el estado | Agente | RN-07, RN-08, RN-09, RN-10 | `PATCH /api/casos/:id/estado` | `/bandeja-soporte` (controles por fila) | CP-04, CP-05 | #15 · #32 #33 #34 | Refinada ([ficha](historias/HU-05.md)) |
 | HU-04 Asignarme un caso | Agente | RN-10, RN-11 | `PATCH /api/casos/:id/asignar` | `/bandeja-soporte` | CP-06 | #14 | Por refinar (Sprint 2) |
