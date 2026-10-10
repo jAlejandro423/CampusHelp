@@ -156,3 +156,47 @@ export function obtenerCasos(): Promise<CasoResumen[]> {
 export function obtenerBandeja(): Promise<CasoResumen[]> {
   return getJson<CasoResumen[]>("/api/casos?bandeja=1");
 }
+
+// HU-05 · Copia del mapa de transiciones SOLO para decidir qué botones
+// mostrar. Quien decide de verdad es el backend (services/estados.js).
+export const TRANSICIONES: Record<string, string[]> = {
+  Pendiente: ["En análisis"],
+  "En análisis": ["En atención"],
+  "En atención": ["En validación"],
+  "En validación": [],
+  Cerrada: [],
+};
+
+export function transicionesValidas(estado: string): string[] {
+  return TRANSICIONES[estado] ?? [];
+}
+
+export async function cambiarEstadoCaso(
+  casoId: number,
+  estado: string,
+  usuarioId: number
+): Promise<CasoCreado> {
+  const response = await fetch(`${API_URL}/api/casos/${casoId}/estado`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ estado, usuario_id: usuarioId }),
+  });
+
+  if (!response.ok) {
+    let error = "No se pudo cambiar el estado";
+    let detalles: string[] = [];
+    try {
+      const data = (await response.json()) as {
+        error?: string;
+        detalles?: string[];
+      };
+      if (data.error) error = data.error;
+      if (Array.isArray(data.detalles)) detalles = data.detalles;
+    } catch {
+      // Respuesta no JSON: se usa el mensaje genérico.
+    }
+    throw new ApiError(response.status, error, detalles);
+  }
+
+  return response.json() as Promise<CasoCreado>;
+}
