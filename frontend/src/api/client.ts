@@ -145,3 +145,14 @@ export function obtenerMisCasos(usuarioId: number): Promise<CasoResumen[]> {
   params.set("usuario_id", String(usuarioId));
   return getJson<CasoResumen[]>(`/api/casos?${params.toString()}`);
 }
+
+export function obtenerCasos(): Promise<CasoResumen[]> {
+  return getJson<CasoResumen[]>("/api/casos");
+}
+
+// HU-03 · Bandeja del agente: usa el BACK #29.
+// GET /api/casos?bandeja=1 excluye Cerrada y ordena por prioridad
+// (P1→P3) y antigüedad (más antiguo primero). Las reglas viven en el backend.
+export function obtenerBandeja(): Promise<CasoResumen[]> {
+  return getJson<CasoResumen[]>("/api/casos?bandeja=1");
+}
