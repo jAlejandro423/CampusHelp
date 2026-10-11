@@ -5,6 +5,7 @@ const router = Router();
 
 router.get('/', casoController.listar);
 router.post('/', casoController.crear);
+router.get('/:id/historial', casoController.historialPorId);
 router.patch('/:id/estado', casoController.cambiarEstadoPorId);
 router.patch('/:id/asignar', casoController.asignarPorId);
 

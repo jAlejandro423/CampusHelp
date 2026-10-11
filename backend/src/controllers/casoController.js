@@ -3,6 +3,7 @@
 // PATCH /api/casos/:id/estado — 200 con el caso actualizado, 404 o 409.
 const { crearCaso, listarCasos } = require('../services/casoService');
 const { cambiarEstado, asignarCaso } = require('../services/estados');
+const { obtenerHistorial } = require('../services/historialService');
 
 async function crear(req, res, next) {
   try {
@@ -40,4 +41,13 @@ async function asignarPorId(req, res, next) {
   }
 }
 
-module.exports = { crear, listar, cambiarEstadoPorId, asignarPorId };
+async function historialPorId(req, res, next) {
+  try {
+    const historial = await obtenerHistorial(req.params.id, req.query.usuario_id);
+    res.status(200).json(historial);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { crear, listar, cambiarEstadoPorId, asignarPorId, historialPorId };
