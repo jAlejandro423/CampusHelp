@@ -13,8 +13,8 @@ Registro de la ejecución real de los casos de prueba del taller. Cada caso indi
 | CP-01 | Registrar incidente válido | HU-01 | 2026-10-09 | ✅ Pasa |
 | CP-02 | Registrar sin descripción | HU-01 | 2026-10-09 | ✅ Pasa |
 | CP-03 | Registrar solicitud de servicio | HU-01 | 2026-10-09 | ✅ Pasa |
-| CP-04 | Cambio de estado válido | HU-05 | — | ⏳ Pendiente (#34) |
-| CP-05 | Transición inválida | HU-05 | — | ⏳ Pendiente (#34) |
+| CP-04 | Cambio de estado válido | HU-05 | 2026-10-10 | ✅ Pasa |
+| CP-05 | Transición inválida | HU-05 | 2026-10-10 | ✅ Pasa |
 | CP-06 | Asignar agente | HU-04 | — | ⏳ Pendiente (Sprint 2) |
 | CP-07 | Registrar diagnóstico y solución | HU-06 | — | ⏳ Pendiente (Sprint 2) |
 | CP-08 | Devolver desde validación | HU-07 | — | ⏳ Pendiente (Sprint 2) |
@@ -338,3 +338,102 @@ Se detuvieron MySQL (`mysqladmin shutdown`) y el backend, y se arrancaron de nue
 ### Conclusión
 
 HU-03 cumple E1 a E4, la regla 4 y sus excepciones, y no se registraron defectos. Queda cubierto también el pendiente de CP-01 (el caso registrado aparece en la bandeja). Candidatos a casos propios en la #38: orden por prioridad y antigüedad (E1 y E4), bandeja vacía y error de la API en la bandeja.
+
+---
+
+## HU-05 · Cambiar el estado del caso (#34)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-10 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `7e33ff6` (incluye #32 y #33) |
+| Base de datos | MySQL 8.0 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos y 17 registros de historial al inicio). Para probar un agente inactivo se agregó el usuario de prueba **QA Agente Inactivo** (id 7, agente, `activo = FALSE`) solo en esta base. |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantalla `/bandeja-soporte`, usuario de prueba **Diego Torres** (id 3, agente) · `npm run build` sin errores |
+
+En cada petición rechazada se contaron las filas de `historial` y se leyó el estado de todos los casos antes y después, para comprobar que no cambió nada.
+
+### CP-04 · Cambio de estado válido (E1) ✅
+
+**Pasos**
+1. En **Bandeja**, con Diego Torres, pulsar **Pasar a En análisis** en la fila del caso `#1` (`Pendiente`).
+2. Consultar el caso y su historial en MySQL.
+
+**Esperado:** el estado se actualiza y se crea un registro en el historial con el estado anterior y el nuevo.
+
+**Obtenido**
+- La bandeja se recarga y la fila `#1` muestra **En análisis** y el botón **Pasar a En atención**.
+- En MySQL, el caso 1 queda `En análisis`.
+- El historial pasa de 17 a 18 filas. La fila nueva es `id 18`, `cambio_estado`, `Pendiente → En análisis`, `usuario_id = 3`, `fecha = 2026-10-10 20:17:10`.
+- **Con `detalle` (regla 7):** `PATCH /api/casos/2/estado` con `{"estado": "En atención", "usuario_id": 4, "detalle": "QA HU-05 Se revisa la licencia de Visual Studio."}` responde `200`. La fila de historial guarda el `detalle`.
+
+**Evidencia:** [`hu05-e5-botones.jpg`](../evidencias/pruebas/hu05-e5-botones.jpg) (antes) · [`hu05-cp04-cambio.jpg`](../evidencias/pruebas/hu05-cp04-cambio.jpg) (después)
+
+### CP-05 · Transición inválida (E2) ✅
+
+**Pasos**
+1. Registrar un caso nuevo con `POST /api/casos`: Incidente, Software / Error, P2, de Carlos Ruiz, título `QA CP-05 Error al abrir el software de laboratorio`. Queda como caso 7, `Pendiente`.
+2. Como Diego, `PATCH /api/casos/7/estado` con `Cerrada`, con `En validación` y con `En atención`.
+3. Revisar el caso y el historial en MySQL después de cada petición.
+
+**Esperado:** el sistema lo impide (`409`) y no cambia nada: ni el caso ni el historial.
+
+**Obtenido**
+
+| Transición | Respuesta |
+|---|---|
+| `Pendiente → Cerrada` | `409` · "Solo se llega a Cerrada por validación (HU-07)." |
+| `Pendiente → En validación` | `409` · "Transición no permitida desde Pendiente." · detalles: "Transiciones permitidas: En análisis." |
+| `Pendiente → En atención` | `409` · el mismo mensaje |
+
+Después de las tres peticiones, el caso 7 sigue `Pendiente`, tiene solo su fila `creacion` y el historial total sigue en 20 filas.
+
+En la interfaz no hay forma de pedir una transición inválida, porque la fila de un caso `Pendiente` solo ofrece **Pasar a En análisis** (E5).
+
+### Otros criterios de HU-05
+
+| Criterio | Pasos | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| E3 · Un caso Cerrada no cambia | `PATCH /api/casos/5/estado` a `En validación` y a `Pendiente` | `409` | `409` · "El caso está Cerrado y no puede cambiar." Sin cambios. | ✅ |
+| E4 · La devolución no va por este endpoint | `PATCH /api/casos/4/estado` (`En validación`) a `En atención` | `409` e indicar que es por validación | `409` · "La devolución se hace por validación (HU-07)." Sin cambios. A `Cerrada` también responde `409`. | ✅ |
+| E5 · Solo los botones permitidos | Abrir **Bandeja** con Diego | Un botón por transición permitida | `Pendiente` → "Pasar a En análisis", `En análisis` → "Pasar a En atención", `En atención` → "Pasar a En validación" y `En validación` → "Sin acciones". | ✅ |
+| Regla 5 · Mismo estado | Caso 2 (`En análisis`) a `En análisis` | `409` | `409` · "El caso ya está en estado En análisis." Sin cambios. | ✅ |
+| Regla 2 · No se retrocede | Caso 3 (`En atención`) a `Pendiente` | `409` | `409` · "Transición no permitida desde En atención." Sin cambios. | ✅ |
+| Regla 7 · Dos cambios simultáneos | Dos `PATCH /api/casos/1/estado` a `En atención` en paralelo, de Diego y de María | Solo uno se aplica | Uno responde `200` y el otro `409` ("El caso ya está en estado En atención."). Se crea **una** sola fila de historial. | ✅ |
+| Error del backend en la interfaz | Con la bandeja abierta, otro agente pasa el caso 7 a `En análisis` por la API. Después, Diego pulsa el botón viejo **Pasar a En análisis**. | Se muestra el `error` del backend y la fila se recarga | La fila muestra "El caso ya está en estado En análisis. Transiciones permitidas: En atención." y se recarga con el estado real y el botón **Pasar a En atención**. | ✅ |
+
+**Evidencia:** [`hu05-error-backend.jpg`](../evidencias/pruebas/hu05-error-backend.jpg)
+
+### Excepciones de HU-05
+
+Todas se ejecutaron con `PATCH /api/casos/:id/estado`, y en ninguna cambió el caso ni el historial.
+
+| Situación | Pasos | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| El caso no existe | `id = 999` | `404` | `404` · "Caso no encontrado" | ✅ |
+| `id` no es un entero | `id = abc` | `400` | `400` · "El id del caso debe ser un entero positivo." | ✅ |
+| Falta `estado` | Cuerpo sin `estado` | `400` | `400` · "Estado inválido. Valores permitidos: …" | ✅ |
+| `estado` no es uno de los 5 valores | `"estado": "Resuelto"` | `400` | `400` · el mismo mensaje | ✅ |
+| El usuario no es agente | `usuario_id` 1 (solicitante) y 5 (validador) | `400` | `400` · "Solo un usuario con rol agente puede cambiar el estado." | ✅ |
+| El usuario no existe | `usuario_id = 99` | `400` | `400` · "El usuario indicado no existe." | ✅ |
+| El usuario está inactivo | `usuario_id = 7` (QA Agente Inactivo) | `400` | `400` · "El usuario indicado está inactivo." | ✅ |
+| Falta `usuario_id` | Cuerpo sin `usuario_id` | `400` | `400` · "usuario_id debe ser un entero positivo." | ✅ |
+| Error de la base de datos | — | `500` y *rollback* | **No se ejecutó:** provocar una falla de MySQL a mitad de la transacción requiere modificar el código. Se revisó en el código: `services/estados.js` hace `rollback` en el `catch` y responde `500`. | ⏳ |
+
+### Prueba de reinicio
+
+Se detuvieron MySQL (`mysqladmin shutdown`) y el backend, y se arrancaron de nuevo (`/api/health` → `db: up`). `GET /api/casos?bandeja=1` devuelve `3 En atención`, `1 En atención`, `4 En validación`, `2 En atención` y `7 En análisis`, los mismos estados que antes del reinicio. MySQL conserva 7 casos y 22 registros de historial: 17 de los seeds, la creación del caso 7 y 4 cambios de estado. ✅
+
+### Observaciones
+
+- **Formato del mensaje de 409:** la ficha de HU-05 da como ejemplo "Transición no permitida: Pendiente → Cerrada". El backend responde "Transición no permitida desde Pendiente." y pone las transiciones permitidas en `detalles`. El contenido cumple la tabla de excepciones, así que no se registra como defecto.
+- **La ruta `/bandeja-soporte` no está protegida por rol:** un solicitante puede abrirla escribiendo la URL. La pantalla avisa que solo un agente puede cambiar el estado y el backend rechaza el cambio con `400`, así que la regla de negocio se cumple. Se anotó como sugerencia en la revisión del PR #66.
+- **Pendiente para el Sprint 2 (regla 8):** todavía no se exige un agente asignado para pasar a `En atención` (el caso 1 pasó sin agente) ni una atención con solución para pasar a `En validación`. Es lo acordado para el Sprint 1.
+- **Seeds incoherentes con la máquina de estados:** los casos 4, 5 y 6 tienen eventos `asignacion` de `Pendiente → En atención`, un salto que el endpoint no permite. Ya está anotado en la ficha de HU-05 y se resuelve al definir HU-04.
+
+### Conclusión
+
+HU-05 cumple CP-04, CP-05, E3 a E5 y sus excepciones, y no se registraron defectos. Solo quedó sin ejecutar la excepción de error de la base de datos, que se revisó en el código. Candidatos a casos propios en la #38: cambio con `detalle`, agente inactivo y dos cambios simultáneos sobre el mismo caso.
