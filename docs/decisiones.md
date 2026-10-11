@@ -197,3 +197,15 @@ Las fichas están en `docs/historias/HU-04.md`, `HU-06.md`, `HU-07.md` y `HU-08.
 | `GET /api/casos` acepta `estado=` (lo agrega #75) | La pantalla Por validar lo necesita; HU-09 lo reutiliza. |
 | `GET /api/casos/:id/historial?usuario_id=`: el solicitante solo ve sus casos y un caso ajeno responde `404` | RN-05 sin revelar qué casos existen, con los códigos del formato de error. Pendiente de confirmar con el equipo. |
 | La regla "→ `En atención` requiere agente" la implementa #69 y "→ `En validación` requiere atención con solución", #72 | Cada regla entra con la historia que la necesita (HU-05, regla 8). |
+
+## D-16 · PATCH asignar HU-04 (Issue #69)
+
+`PATCH /api/casos/:id/asignar` con `{ usuario_id }` → `200` con el caso actualizado.
+
+| Decisión | Motivo |
+|---|---|
+| Lógica en `services/estados.js` (`asignarCaso`), junto a la máquina | La ficha HU-04 lo pide ahí para que la regla 6 de HU-05 viva con la máquina. |
+| Solo casos sin agente en `Pendiente` o `En análisis`; ya asignado u otro estado → `409` | Regla 2 y E2; `Cerrada` entra en "otro estado". Solo `agente` (400 si no). |
+| `Pendiente` → `En análisis` al asignar; `En análisis` no cambia; un evento `asignacion` en transacción con `FOR UPDATE` | D-14; RN-10; anti-doble-asignación como HU-05. |
+| Regla "→ `En atención` requiere agente" en `cambiarEstado` | D-15: entra con la historia que la necesita (HU-05, regla 8). |
+| Seeds reescritos (21 historials): asignaciones D-14 + `cambio_estado` intermedios | Los eventos `Pendiente → En atención` violaban el mapa; ojo: todos deben **recargar su BD local**. |

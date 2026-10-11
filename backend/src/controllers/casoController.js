@@ -2,7 +2,7 @@
 // GET /api/casos?usuario_id= — 200 con el listado (forma de fila HU-02).
 // PATCH /api/casos/:id/estado — 200 con el caso actualizado, 404 o 409.
 const { crearCaso, listarCasos } = require('../services/casoService');
-const { cambiarEstado } = require('../services/estados');
+const { cambiarEstado, asignarCaso } = require('../services/estados');
 
 async function crear(req, res, next) {
   try {
@@ -31,4 +31,13 @@ async function cambiarEstadoPorId(req, res, next) {
   }
 }
 
-module.exports = { crear, listar, cambiarEstadoPorId };
+async function asignarPorId(req, res, next) {
+  try {
+    const caso = await asignarCaso(req.params.id, req.body);
+    res.status(200).json(caso);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { crear, listar, cambiarEstadoPorId, asignarPorId };

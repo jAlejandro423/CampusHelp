@@ -74,21 +74,27 @@ INSERT INTO atencion (id, caso_id, diagnostico, solucion, fecha, agente_id) VALU
   (4, 6, 'Switch de la sala con puerto bloqueado.', 'Se desbloqueó el puerto y se verificó conectividad en 3 equipos.', '2026-10-07 11:30:00', 4);
 
 -- Historial trazable de cada caso (un evento por transición).
+-- D-14 (HU-04): las asignaciones cumplen la máquina (Pendiente → En análisis
+-- al asignar; En análisis → En análisis si ya estaba en análisis).
 INSERT INTO historial (id, caso_id, evento, estado_anterior, estado_nuevo, usuario_id, fecha, detalle) VALUES
   (1, 1, 'creacion', NULL, 'Pendiente', 1, '2026-10-06 09:00:00', 'Caso registrado por la solicitante.'),
   (2, 2, 'creacion', NULL, 'Pendiente', 2, '2026-10-06 10:30:00', 'Caso registrado por el solicitante.'),
   (3, 2, 'cambio_estado', 'Pendiente', 'En análisis', 3, '2026-10-06 11:00:00', 'Se toma para análisis y clasificación.'),
   (4, 3, 'creacion', NULL, 'Pendiente', 1, '2026-10-05 11:00:00', 'Caso registrado por la solicitante.'),
   (5, 3, 'cambio_estado', 'Pendiente', 'En análisis', 3, '2026-10-05 15:00:00', 'Se clasifica como Hardware/Computador P1.'),
-  (6, 3, 'asignacion', 'En análisis', 'En atención', 3, '2026-10-06 08:30:00', 'El agente Diego asume la atención.'),
-  (7, 4, 'creacion', NULL, 'Pendiente', 2, '2026-10-05 09:15:00', 'Caso registrado por el solicitante.'),
-  (8, 4, 'asignacion', 'Pendiente', 'En atención', 4, '2026-10-05 14:00:00', 'La agente María asume la atención.'),
-  (9, 4, 'envio_validacion', 'En atención', 'En validación', 4, '2026-10-06 11:00:00', 'Solución registrada; pasa a validación.'),
-  (10, 5, 'creacion', NULL, 'Pendiente', 1, '2026-10-05 08:00:00', 'Caso registrado por la solicitante.'),
-  (11, 5, 'asignacion', 'Pendiente', 'En atención', 3, '2026-10-05 09:00:00', 'El agente Diego asume la atención.'),
-  (12, 5, 'envio_validacion', 'En atención', 'En validación', 3, '2026-10-06 15:00:00', 'Solución registrada; pasa a validación.'),
-  (13, 5, 'cierre', 'En validación', 'Cerrada', 5, '2026-10-06 16:00:00', 'Validación aprobada; se cierra el caso.'),
-  (14, 6, 'creacion', NULL, 'Pendiente', 2, '2026-10-05 10:00:00', 'Caso registrado por el solicitante.'),
-  (15, 6, 'asignacion', 'Pendiente', 'En atención', 4, '2026-10-05 11:00:00', 'La agente María asume la atención.'),
-  (16, 6, 'envio_validacion', 'En atención', 'En validación', 4, '2026-10-07 11:30:00', 'Solución registrada; pasa a validación.'),
-  (17, 6, 'cierre', 'En validación', 'Cerrada', 5, '2026-10-07 12:00:00', 'Validación aprobada; se cierra el caso.');
+  (6, 3, 'asignacion', 'En análisis', 'En análisis', 3, '2026-10-06 08:30:00', 'El agente Diego asume la atención.'),
+  (7, 3, 'cambio_estado', 'En análisis', 'En atención', 3, '2026-10-06 09:00:00', 'El caso pasa a En atención con agente asignado.'),
+  (8, 4, 'creacion', NULL, 'Pendiente', 2, '2026-10-05 09:15:00', 'Caso registrado por el solicitante.'),
+  (9, 4, 'asignacion', 'Pendiente', 'En análisis', 4, '2026-10-05 14:00:00', 'La agente María asume la atención.'),
+  (10, 4, 'cambio_estado', 'En análisis', 'En atención', 4, '2026-10-05 16:00:00', 'El caso pasa a En atención con agente asignado.'),
+  (11, 4, 'envio_validacion', 'En atención', 'En validación', 4, '2026-10-06 11:00:00', 'Solución registrada; pasa a validación.'),
+  (12, 5, 'creacion', NULL, 'Pendiente', 1, '2026-10-05 08:00:00', 'Caso registrado por la solicitante.'),
+  (13, 5, 'asignacion', 'Pendiente', 'En análisis', 3, '2026-10-05 09:00:00', 'El agente Diego asume la atención.'),
+  (14, 5, 'cambio_estado', 'En análisis', 'En atención', 3, '2026-10-05 10:30:00', 'El caso pasa a En atención con agente asignado.'),
+  (15, 5, 'envio_validacion', 'En atención', 'En validación', 3, '2026-10-06 15:00:00', 'Solución registrada; pasa a validación.'),
+  (16, 5, 'cierre', 'En validación', 'Cerrada', 5, '2026-10-06 16:00:00', 'Validación aprobada; se cierra el caso.'),
+  (17, 6, 'creacion', NULL, 'Pendiente', 2, '2026-10-05 10:00:00', 'Caso registrado por el solicitante.'),
+  (18, 6, 'asignacion', 'Pendiente', 'En análisis', 4, '2026-10-05 11:00:00', 'La agente María asume la atención.'),
+  (19, 6, 'cambio_estado', 'En análisis', 'En atención', 4, '2026-10-05 15:00:00', 'El caso pasa a En atención con agente asignado.'),
+  (20, 6, 'envio_validacion', 'En atención', 'En validación', 4, '2026-10-07 11:30:00', 'Solución registrada; pasa a validación.'),
+  (21, 6, 'cierre', 'En validación', 'Cerrada', 5, '2026-10-07 12:00:00', 'Validación aprobada; se cierra el caso.');
