@@ -112,7 +112,7 @@ Escala de Story Points: **1, 2, 3, 5, 8, 13** (estimación relativa). Referencia
 - La fecha real en que una historia **entra a cada columna** se anota en la hoja de seguimiento **el mismo día** (ver `docs/metricas/`).
 - Se calculan por sprint: **WIP** (conteo en cada Daily), **Throughput** (historias Done), **Lead Time** (Done − Ready), **Cycle Time** (Done − En análisis), **defectos** y **bloqueos** (cantidad y duración).
 - **No se inventan ni reconstruyen métricas al final.** Si se olvida un registro, se anota la fecha más probable y se deja la observación.
-- Se toma una **captura del tablero cada día** después de la Daily: `docs/evidencias/tablero/AAAA-MM-DD.png`.
+- El flujo del tablero se justifica con el **roadmap del Project** (vista Roadmap), donde cada issue queda en su fecha real de cierre. Ya no se toman capturas diarias del tablero (acordado en la [retrospectiva del Sprint 1](retrospectivas/sprint-1.md)).
 
 ## 9. Aprobación
 
@@ -126,4 +126,4 @@ Cualquier cambio a estas políticas se acuerda en una retrospectiva y se registr
 
 | Fecha | Cambio | Motivo (evidencia) |
 |---|---|---|
-| | | |
+| 2026-10-10 | Sección 8: la captura diaria del tablero se reemplaza por el roadmap del Project. | Retrospectiva del Sprint 1: las capturas diarias no se tomaron y el roadmap muestra la fecha real de cierre de cada issue ([sprint-1.md](retrospectivas/sprint-1.md)). |

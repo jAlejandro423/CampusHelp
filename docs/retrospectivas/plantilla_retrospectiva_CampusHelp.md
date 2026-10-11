@@ -77,6 +77,6 @@ Es **una sola** mejora, concreta y medible. Se revisa en la próxima retro (secc
 
 ## 8. Evidencias
 
-- Captura del tablero al cierre: `docs/evidencias/tablero/AAAA-MM-DD.png`
+- Roadmap del tablero: https://github.com/users/jAlejandro423/projects/1/views/4
 - Sprint Review: `docs/evidencias/reviews/sprint-N/`
 - Issue de ceremonias: #
