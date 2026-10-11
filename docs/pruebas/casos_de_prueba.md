@@ -26,6 +26,7 @@ Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de a
 | HU | Escenarios | Issue | Fecha | Estado |
 |---|---|---|---|---|
 | HU-02 · Consultar mis casos | E1, E2, E3, E4 y excepciones | #28 | 2026-10-10 | ✅ Pasa |
+| HU-03 · Bandeja de casos pendientes | E1, E2, E3, E4, regla 4 y excepciones | #31 | 2026-10-10 | ✅ Pasa |
 
 ---
 
@@ -128,7 +129,7 @@ Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de a
 
 HU-01 cumple E1 a E6 y no tiene defectos abiertos. No se registraron defectos nuevos en esta ejecución. DEF-01 (#56), el defecto de codificación de los scripts SQL, se cerró antes de ejecutar estas pruebas: la base se cargó sin `--default-character-set` y los textos con tildes quedaron bien.
 
-**Pendiente fuera de HU-01:** la presencia en la pantalla de la bandeja se comprobará en la #31 (QA de HU-03), cuando se fusione la #30.
+**Pendiente fuera de HU-01:** la presencia en la pantalla de la bandeja se comprobó en la #31 (ver HU-03 · E3) el 2026-10-10. ✅
 
 ---
 
@@ -231,3 +232,109 @@ Se detuvieron MySQL (`mysqladmin shutdown`) y el backend, y se arrancaron de nue
 ### Conclusión
 
 HU-02 cumple E1 a E4 y sus excepciones, y no se registraron defectos. Candidatos a casos propios en la #38: aislamiento entre solicitantes (E1), lista vacía (E2) y error de la API en la vista (excepción 3).
+
+---
+
+## HU-03 · Bandeja de casos pendientes (#31)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-10 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `ea85117` (incluye #29 y #30) |
+| Base de datos | MySQL 8.0 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos y 17 registros de historial al inicio). Para E1 se insertó por SQL, solo en esta base, el caso 7: **P3**, Solicitud, Software / Actualización, de Carlos Ruiz, `Pendiente`, con `fecha_creacion` = `2026-10-01 08:00:00` y su evento `creacion` en el historial. Se insertó por SQL porque la API fija la fecha de creación y no permite crear un caso antiguo. |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantalla `/bandeja-soporte` ("Bandeja" en el menú), usuario de prueba **Diego Torres** (id 3, agente) |
+
+Con los seeds, los casos abiertos son `#1` (P1, 6 oct), `#3` (P1, 5 oct), `#2` (P2, 6 oct) y `#4` (P2, 5 oct). Los casos `#5` y `#6` están `Cerrada`.
+
+### E3 · Un caso recién registrado aparece Pendiente y "Sin asignar" ✅
+
+**Pasos**
+1. En `/crear-caso`, con Laura Gómez, registrar un **Incidente** de **Hardware / Proyector**, prioridad **P1**, título `QA HU-03 Proyector del auditorio sin imagen`.
+2. Cambiar a Diego Torres y abrir **Bandeja**.
+
+**Esperado:** el caso nuevo aparece en estado `Pendiente` y con agente "Sin asignar".
+
+**Obtenido**
+- La pantalla muestra "¡Caso #8 registrado con éxito!".
+- En MySQL, el caso 8 queda `Pendiente`, con `agente_id = NULL` y `fecha_creacion = 2026-10-10 08:57:41`. El historial suma la fila `creacion`, `NULL → Pendiente`, `usuario_id = 1`.
+- En la bandeja, la fila `#8` muestra **Pendiente** y **Sin asignar**.
+
+Con esto queda comprobado el pendiente de CP-01: un caso registrado desde la interfaz aparece en la pantalla de la bandeja.
+
+**Evidencia:** [`hu03-bandeja-orden.jpg`](../evidencias/pruebas/hu03-bandeja-orden.jpg) (la misma captura de E1, E2 y E4)
+
+### E1 · Un P1 reciente aparece antes que un P3 antiguo ✅
+
+**Pasos**
+1. Con el caso 7 (P3, 1 oct) y el caso 8 (P1, 10 oct), abrir **Bandeja** con Diego Torres.
+2. Comparar con `GET /api/casos?bandeja=1`.
+
+**Esperado:** el P1 aparece primero, aunque sea más reciente.
+
+**Obtenido**
+- La bandeja muestra `#3, #1, #8, #4, #2, #7`. El caso `#8` (P1, 10 oct) aparece antes que el `#7` (P3, 1 oct), que queda al final.
+- La API devuelve el mismo orden.
+- Se muestran las 9 columnas de la regla 2: ID, título, tipo, área / categoría, solicitante, prioridad, estado, agente y fecha. Las filas P1 tienen un borde rojo.
+
+**Evidencia:** [`hu03-bandeja-orden.jpg`](../evidencias/pruebas/hu03-bandeja-orden.jpg)
+
+### E2 · Los casos Cerrada no aparecen ✅
+
+**Pasos**
+1. Abrir **Bandeja** con Diego Torres.
+2. Comparar con `GET /api/casos?bandeja=1`.
+
+**Esperado:** los casos `Cerrada` no aparecen.
+
+**Obtenido:** ni la pantalla ni la API incluyen los casos `#5` y `#6`, que están `Cerrada`. Aparecen los otros 6 casos, en los estados `Pendiente`, `En análisis`, `En atención` y `En validación`.
+
+**Evidencia:** [`hu03-bandeja-orden.jpg`](../evidencias/pruebas/hu03-bandeja-orden.jpg)
+
+### E4 · Entre dos P1, el más antiguo aparece primero ✅
+
+**Pasos**
+1. Abrir **Bandeja** con Diego Torres y comparar los casos P1.
+
+**Esperado:** el P1 más antiguo aparece primero.
+
+**Obtenido**
+- Entre los P1, el orden es `#3` (5 oct), `#1` (6 oct) y `#8` (10 oct).
+- Entre los P2, el orden es `#4` (5 oct) y `#2` (6 oct).
+
+**Evidencia:** [`hu03-bandeja-orden.jpg`](../evidencias/pruebas/hu03-bandeja-orden.jpg)
+
+### Regla 4 · La bandeja solo está en el menú del agente ✅
+
+| Usuario | Rol | Menú |
+|---|---|---|
+| Diego Torres y María Prieto | Agente | `/bandeja-soporte` |
+| Laura Gómez | Solicitante | `/crear-caso` y `/mis-solicitudes` |
+| Pedro Validador | Validador | `/por-validar` |
+| Ana Admin | Administrador | `/casos`, `/indicadores` y `/categorias` |
+
+### Excepciones de HU-03
+
+| Situación | Pasos | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| No hay casos abiertos | Respaldar los estados en una tabla temporal, pasar todos los casos a `Cerrada` por SQL y abrir **Bandeja** con Diego. Después se restauraron los estados y se borró la tabla temporal. | `200 []` y "No hay casos pendientes" | La API responde `200 []` y la pantalla muestra "No hay casos pendientes". | ✅ |
+| `bandeja` con un valor distinto de `1` | `GET /api/casos?bandeja=` con `0`, `abc`, `true` y vacío | Se ignora y se comporta como el listado general | Las cuatro responden `200` con el listado general de 7 casos, incluidos los `Cerrada`. | ✅ |
+| La API no responde | Con la bandeja cargada, detener el backend y volver a abrir la bandeja (cambio de ruta en la aplicación) | Mensaje de error | Aparece el banner "No se pudo cargar la bandeja. Intenta de nuevo." | ✅ |
+
+**Evidencia:** [`hu03-bandeja-vacia.jpg`](../evidencias/pruebas/hu03-bandeja-vacia.jpg) · [`hu03-api-caida.jpg`](../evidencias/pruebas/hu03-api-caida.jpg)
+
+### Prueba de reinicio
+
+Se detuvieron MySQL (`mysqladmin shutdown`) y el backend, y se arrancaron de nuevo. `GET /api/casos?bandeja=1` devuelve el mismo orden: `#3, #1, #8, #4, #2, #7`. El caso 8 sigue `Pendiente` y sin agente. MySQL conserva 8 casos y 19 registros de historial: 17 de los seeds, más la creación del caso 7 (insertada por SQL) y la del caso 8. ✅
+
+### Observaciones
+
+- **La bandeja no se recarga al cambiar de agente.** Al pasar de Diego a María en el selector, la tabla no vuelve a pedir los datos. No es un defecto, porque la bandeja es la misma para todos los agentes. Por eso, en la prueba de la API caída, la bandeja se volvió a abrir con un cambio de ruta.
+- **E1 necesitó un caso antiguo creado por SQL**, porque la fecha de creación es automática (regla de HU-01). Solo se hizo en la base de pruebas.
+
+### Conclusión
+
+HU-03 cumple E1 a E4, la regla 4 y sus excepciones, y no se registraron defectos. Queda cubierto también el pendiente de CP-01 (el caso registrado aparece en la bandeja). Candidatos a casos propios en la #38: orden por prioridad y antigüedad (E1 y E4), bandeja vacía y error de la API en la bandeja.
