@@ -191,9 +191,9 @@ Las fichas están en `docs/historias/HU-04.md`, `HU-06.md`, `HU-07.md` y `HU-08.
 |---|---|
 | Nuevo evento `atencion` en el catálogo de `historial` (estado anterior y nuevo `En atención`), al registrar una atención | HU-08 debe mostrar el trabajo del agente, aunque no cambie el estado. |
 | `En atención → En validación` por `PATCH /api/casos/:id/estado` registra el evento `envio_validacion`, no `cambio_estado` | Es el evento del catálogo (D-08) que ya usan los seeds. Lo implementa #72. |
-| En la atención, el diagnóstico es obligatorio y la solución opcional (mínimo 10 caracteres cada uno) | El esquema (`solucion NULL`), los seeds y la regla "no se pasa a `En validación` sin una atención con solución" lo suponen. Pendiente de confirmar con el equipo. |
+| En la atención, el diagnóstico es obligatorio y la solución opcional (mínimo 10 caracteres cada uno) | El esquema (`solucion NULL`), los seeds y la regla "no se pasa a `En validación` sin una atención con solución" lo suponen. Confirmado con el equipo el 2026-10-11. |
 | `GET /api/casos/:id/atenciones` | El agente ve sus atenciones previas y el validador ve la solución, sin esperar al detalle de HU-12. |
 | `POST /api/casos/:id/validacion` con `accion` `aprobar` o `devolver`; devolver exige motivo (10 caracteres) y conserva `agente_id` | Un solo endpoint (CLAUDE.md). El caso vuelve al agente que ya conoce el problema. |
 | `GET /api/casos` acepta `estado=` (lo agrega #75) | La pantalla Por validar lo necesita; HU-09 lo reutiliza. |
-| `GET /api/casos/:id/historial?usuario_id=`: el solicitante solo ve sus casos y un caso ajeno responde `404` | RN-05 sin revelar qué casos existen, con los códigos del formato de error. Pendiente de confirmar con el equipo. |
+| `GET /api/casos/:id/historial?usuario_id=`: el solicitante solo ve sus casos y un caso ajeno responde `404` | RN-05 sin revelar qué casos existen, con los códigos del formato de error. Confirmado con el equipo el 2026-10-11. |
 | La regla "→ `En atención` requiere agente" la implementa #69 y "→ `En validación` requiere atención con solución", #72 | Cada regla entra con la historia que la necesita (HU-05, regla 8). |

@@ -54,7 +54,7 @@ Las historias dependen unas de otras: HU-04 → HU-06 → HU-07. HU-08 solo depe
 ### Riesgos
 
 - **Capacidad:** el Sprint 1 completó 16 puntos en 5 días; este sprint compromete 18 puntos en 1 día. Si a mitad del día no se ha cerrado HU-04, se prioriza el flujo principal (HU-04, 06 y 07) y HU-08 pasa al Sprint 3.
-- **DoR:** las fichas de HU-04, 06, 07 y 08 se refinaron el 2026-10-10 en `docs/historias/` ([D-15](../decisiones.md)), antes de empezar el desarrollo. Quedan por confirmar con el equipo dos propuestas: la solución opcional en HU-06 (R1) y el `404` para el historial ajeno en HU-08 (R2).
+- **DoR:** las fichas de HU-04, 06, 07 y 08 se refinaron el 2026-10-10 en `docs/historias/` ([D-15](../decisiones.md)), antes de empezar el desarrollo. El 2026-10-11 el equipo confirmó las dos propuestas que quedaban: la solución opcional en HU-06 (R1) y el `404` para el historial ajeno en HU-08 (R2).
 
 ## Sprint Review
 
