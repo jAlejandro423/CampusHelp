@@ -1,6 +1,6 @@
 # Matriz de trazabilidad – CampusHelp
 
-Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantallas, casos de prueba e issues. Las HU del Sprint 1 están refinadas (ver `docs/historias/`). Las de los sprints 2 y 3 se completan en su Sprint Planning; mientras tanto aparecen como *por refinar* y muestran lo que ya se sabe del taller.
+Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantallas, casos de prueba e issues. Las HU de los sprints 1 y 2 están refinadas (ver `docs/historias/`). Las del Sprint 3 se completan en su Sprint Planning; mientras tanto aparecen como *por refinar* y muestran lo que ya se sabe del taller.
 
 ## Matriz
 
@@ -10,10 +10,10 @@ Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantall
 | HU-02 Consultar mis casos | Solicitante | RN-05 | `GET /api/casos?usuario_id=` | `/mis-solicitudes` | E1–E4 de HU-02 (#28) | #12 · #26 #27 #28 | Refinada ([ficha](historias/HU-02.md)) |
 | HU-03 Bandeja de casos pendientes | Agente | RN-06 | `GET /api/casos?bandeja=1` | `/bandeja-soporte` | CP-01 y E1–E4 de HU-03 (#31) | #13 · #29 #30 #31 | Refinada ([ficha](historias/HU-03.md)) |
 | HU-05 Cambiar el estado | Agente | RN-07, RN-08, RN-09, RN-10 | `PATCH /api/casos/:id/estado` | `/bandeja-soporte` (controles por fila) | CP-04, CP-05 y E3–E5 de HU-05 (#34) | #15 · #32 #33 #34 | Refinada ([ficha](historias/HU-05.md)) |
-| HU-04 Asignarme un caso | Agente | RN-10, RN-11 | `PATCH /api/casos/:id/asignar` | `/bandeja-soporte` | CP-06 | #14 | Por refinar (Sprint 2) |
-| HU-06 Registrar diagnóstico y solución | Agente asignado | RN-10, RN-12 | `POST /api/casos/:id/atenciones` | Por definir | CP-07 | #16 | Por refinar (Sprint 2) |
-| HU-07 Aprobar o devolver | Validador | RN-08, RN-10, RN-13 | `POST /api/casos/:id/validacion` | `/por-validar` | CP-08, CP-09 | #17 | Por refinar (Sprint 2) |
-| HU-08 Consultar historial | Solicitante, agente, validador, administrador | RN-10 | `GET /api/casos/:id/historial` | Por definir | Por definir | #18 | Por refinar (Sprint 2) |
+| HU-04 Asignarme un caso | Agente | RN-10, RN-11 | `PATCH /api/casos/:id/asignar` | `/bandeja-soporte` (botón Asignarme) | CP-06 y E2–E5 de HU-04 (#71) | #14 · #69 #70 #71 | Refinada ([ficha](historias/HU-04.md)) |
+| HU-06 Registrar diagnóstico y solución | Agente asignado | RN-10, RN-12 | `POST` y `GET /api/casos/:id/atenciones` | `/bandeja-soporte` (Registrar atención) | CP-07 y E2–E5 de HU-06 (#74) | #16 · #72 #73 #74 | Refinada ([ficha](historias/HU-06.md)) |
+| HU-07 Aprobar o devolver | Validador | RN-08, RN-10, RN-13 | `POST /api/casos/:id/validacion`, `GET /api/casos?estado=` | `/por-validar` | CP-08, CP-09 y E3–E5 de HU-07 (#77) | #17 · #75 #76 #77 | Refinada ([ficha](historias/HU-07.md)) |
+| HU-08 Consultar historial | Solicitante, agente, validador, administrador | RN-05, RN-10 | `GET /api/casos/:id/historial?usuario_id=` | Ver historial en `/mis-solicitudes`, `/bandeja-soporte` y `/por-validar` | E1–E4 de HU-08 y flujo completo (#80) | #18 · #78 #79 #80 | Refinada ([ficha](historias/HU-08.md)) |
 | HU-09 Filtrar casos | Administrador | — | `GET /api/casos?estado=&tipo=&area_id=&categoria_id=&prioridad=` | `/casos` | CP-10 | #19 | Por refinar (Sprint 3) |
 | HU-10 Indicadores | Administrador | — | `GET /api/indicadores` | `/indicadores` | Por definir | #20 | Por refinar (Sprint 3) |
 | HU-11 Gestionar categorías | Administrador | RN-02 | `POST`, `PUT /api/categorias` y `PATCH /api/categorias/:id` | `/categorias` | Por definir | #21 | Por refinar (Sprint 3) |
@@ -34,7 +34,7 @@ Los casos propios (CP-11 en adelante) se agregan a esta matriz cuando se escriba
 | RN-07 | Solo se permiten las transiciones del mapa de estados. Las demás devuelven 409. | Backend, `services/estados.js` |
 | RN-08 | Solo se llega a `Cerrada` por la validación (HU-07). La devolución también es exclusiva de la validación y exige motivo. | Backend |
 | RN-09 | Un caso `Cerrada` no cambia. | Backend |
-| RN-10 | Todo cambio de estado, asignación o creación genera un registro en `historial` en la misma transacción. | Backend |
+| RN-10 | Todo cambio de estado, asignación, atención o creación genera un registro en `historial` en la misma transacción. | Backend |
 | RN-11 | Para pasar a `En atención`, el caso tiene agente asignado. | Backend (Sprint 2) |
 | RN-12 | Solo el agente asignado registra la atención, y no se pasa a `En validación` sin una atención con solución. | Backend (Sprint 2) |
 | RN-13 | Al cerrar se guarda `fecha_cierre`. Al devolver, el caso vuelve a `En atención` con el motivo en `historial.detalle`. | Backend (Sprint 2) |
