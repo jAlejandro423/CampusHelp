@@ -173,3 +173,12 @@ Un solo endpoint con filtros combinables (`AND`) para HU-02 (`?usuario_id=`), HU
 | Mismo estado, salto de pasos, `Cerrada` o devolver → `409` con transiciones permitidas en `detalles` | El frontend dibuja solo los botones válidos (E5) y explica cada rechazo (CP-05). |
 | Caso inexistente → `404`; cuerpo inválido → `400 Datos inválidos` | Respeta la tabla de excepciones de HU-05. |
 | Sin tocar `fecha_asignacion/cierre` aquí | El cierre solo llega por validación (RN-13, HU-07, Sprint 2). |
+
+## D-14 · Asignarse un caso lo pasa a En análisis (HU-04 · Sprint 2 Planning, 2026-10-10)
+
+| Decisión | Motivo |
+|---|---|
+| Si el caso está `Pendiente`, `PATCH /api/casos/:id/asignar` guarda `agente_id` y `fecha_asignacion` y lo pasa a `En análisis` | Asignarse es tomar el caso: el agente empieza a analizarlo sin un clic extra. |
+| Si el caso ya está `En análisis` sin agente, solo se asigna y el estado no cambia | No se salta ningún paso de la máquina de estados (D-13). |
+| Un solo evento `asignacion` en `historial`, con `estado_anterior` y `estado_nuevo`, en la misma transacción que el `UPDATE` | RN-10: toda asignación o cambio de estado deja historial. |
+| Los eventos `asignacion` de los casos 4, 5 y 6 en `seeds.sql` se corrigen a `Pendiente → En análisis`, seguidos de los `cambio_estado` que llevan a su estado actual | Hoy saltan de `Pendiente` a `En atención`, una transición que el mapa no permite (observación de HU-05). Lo hace el BACK de HU-04 (#69). |
