@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   obtenerBandeja,
   cambiarEstadoCaso,
+  asignarCaso,
   transicionesValidas,
   ApiError,
 } from "../api/client";
@@ -19,6 +20,7 @@ function BandejaSoporte() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [cambiandoId, setCambiandoId] = useState<number | null>(null);
+  const [asignandoId, setAsignandoId] = useState<number | null>(null);
   const [errorFila, setErrorFila] = useState<Record<number, string>>({});
 
   async function cargar() {
@@ -77,6 +79,34 @@ function BandejaSoporte() {
     }
   }
 
+  async function handleAsignarme(caso: CasoResumen) {
+    if (!usuario) {
+      setErrorFila((prev) => ({
+        ...prev,
+        [caso.id]: "No hay usuario activo para asignar el caso.",
+      }));
+      return;
+    }
+    setAsignandoId(caso.id);
+    setErrorFila((prev) => ({ ...prev, [caso.id]: "" }));
+    try {
+      await asignarCaso(caso.id, usuario.id);
+      // Pendiente pasa a En análisis; se recarga para reflejar agente,
+      // estado y orden reales (HU-04 E1/E3).
+      await cargar();
+    } catch (err) {
+      console.error(`Error asignando caso ${caso.id}:`, err);
+      const mensaje =
+        err instanceof ApiError
+          ? [err.message, ...err.detalles].filter(Boolean).join(" ")
+          : "No se pudo asignar el caso. Intenta de nuevo.";
+      setErrorFila((prev) => ({ ...prev, [caso.id]: mensaje }));
+      await cargar();
+    } finally {
+      setAsignandoId(null);
+    }
+  }
+
   return (
     <div>
       <h2 className="text-3xl font-bold text-slate-900">Bandeja de Soporte</h2>
@@ -87,8 +117,8 @@ function BandejaSoporte() {
 
       {usuario && usuario.rol !== "agente" && (
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          Solo un usuario con rol agente puede cambiar el estado (el backend lo
-          exige).
+          Solo un usuario con rol agente puede cambiar el estado o asignarse
+          casos (el backend lo exige).
         </div>
       )}
 
@@ -121,6 +151,12 @@ function BandejaSoporte() {
               <tbody>
                 {casos.map((caso) => {
                   const acciones = transicionesValidas(caso.estado);
+                  const puedeAsignarse =
+                    caso.agente_id === null &&
+                    (caso.estado === "Pendiente" ||
+                      caso.estado === "En análisis");
+                  const ocupado =
+                    cambiandoId === caso.id || asignandoId === caso.id;
                   return (
                     <tr
                       key={caso.id}
@@ -162,17 +198,29 @@ function BandejaSoporte() {
                         {formatearFecha(caso.fecha_creacion)}
                       </td>
                       <td className="py-3">
-                        {acciones.length === 0 ? (
+                        {!puedeAsignarse && acciones.length === 0 ? (
                           <span className="text-xs text-slate-400">
                             Sin acciones
                           </span>
                         ) : (
                           <div className="flex flex-col gap-1">
+                            {puedeAsignarse && (
+                              <button
+                                type="button"
+                                disabled={ocupado}
+                                onClick={() => handleAsignarme(caso)}
+                                className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+                              >
+                                {asignandoId === caso.id
+                                  ? "Asignando…"
+                                  : "Asignarme"}
+                              </button>
+                            )}
                             {acciones.map((siguiente) => (
                               <button
                                 key={siguiente}
                                 type="button"
-                                disabled={cambiandoId === caso.id}
+                                disabled={ocupado}
                                 onClick={() =>
                                   handleCambiarEstado(caso, siguiente)
                                 }
