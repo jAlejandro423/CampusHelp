@@ -14,6 +14,7 @@ import {
   formatearFecha,
 } from "../components/badges";
 import HistorialTimeline from "../components/HistorialTimeline";
+import AtencionForm from "../components/AtencionForm";
 
 function BandejaSoporte() {
   const { usuario } = useUsuario();
@@ -24,6 +25,7 @@ function BandejaSoporte() {
   const [asignandoId, setAsignandoId] = useState<number | null>(null);
   const [errorFila, setErrorFila] = useState<Record<number, string>>({});
   const [historialId, setHistorialId] = useState<number | null>(null);
+  const [atencionCaso, setAtencionCaso] = useState<CasoResumen | null>(null);
 
   async function cargar() {
     try {
@@ -157,6 +159,10 @@ function BandejaSoporte() {
                     caso.agente_id === null &&
                     (caso.estado === "Pendiente" ||
                       caso.estado === "En análisis");
+                  const puedeAtender =
+                    caso.estado === "En atención" &&
+                    usuario !== null &&
+                    usuario.id === caso.agente_id;
                   const ocupado =
                     cambiandoId === caso.id || asignandoId === caso.id;
                   return (
@@ -201,11 +207,13 @@ function BandejaSoporte() {
                       </td>
                       <td className="py-3">
                         <div className="flex flex-col gap-1">
-                          {!puedeAsignarse && acciones.length === 0 && (
-                            <span className="text-xs text-slate-400">
-                              Sin acciones
-                            </span>
-                          )}
+                          {!puedeAsignarse &&
+                            !puedeAtender &&
+                            acciones.length === 0 && (
+                              <span className="text-xs text-slate-400">
+                                Sin acciones
+                              </span>
+                            )}
                           {puedeAsignarse && (
                             <button
                               type="button"
@@ -218,7 +226,17 @@ function BandejaSoporte() {
                                 : "Asignarme"}
                             </button>
                           )}
-                          {acciones.map((siguiente) => (
+                          {puedeAtender && (
+                              <button
+                                type="button"
+                                disabled={ocupado}
+                                onClick={() => setAtencionCaso(caso)}
+                                className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-60"
+                              >
+                                Registrar atención
+                              </button>
+                            )}
+                            {acciones.map((siguiente) => (
                             <button
                               key={siguiente}
                               type="button"
@@ -260,6 +278,14 @@ function BandejaSoporte() {
         <HistorialTimeline
           casoId={historialId}
           onClose={() => setHistorialId(null)}
+        />
+      )}
+
+      {atencionCaso !== null && (
+        <AtencionForm
+          caso={atencionCaso}
+          onClose={() => setAtencionCaso(null)}
+          onSaved={() => cargar()}
         />
       )}
     </div>
