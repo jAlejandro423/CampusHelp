@@ -8,12 +8,14 @@ import {
   colorPrioridad,
   formatearFecha,
 } from "../components/badges";
+import HistorialTimeline from "../components/HistorialTimeline";
 
 function MisSolicitudes() {
   const { usuario } = useUsuario();
   const [casos, setCasos] = useState<CasoResumen[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [historialId, setHistorialId] = useState<number | null>(null);
 
   useEffect(() => {
     async function cargar() {
@@ -84,7 +86,8 @@ function MisSolicitudes() {
                   <th className="py-2 pr-4">Área / Categoría</th>
                   <th className="py-2 pr-4">Prioridad</th>
                   <th className="py-2 pr-4">Estado</th>
-                  <th className="py-2">Fecha</th>
+                  <th className="py-2 pr-4">Fecha</th>
+                  <th className="py-2">Historial</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,8 +118,17 @@ function MisSolicitudes() {
                         {caso.estado}
                       </span>
                     </td>
-                    <td className="py-3 text-slate-500">
+                    <td className="py-3 pr-4 text-slate-500">
                       {formatearFecha(caso.fecha_creacion)}
+                    </td>
+                    <td className="py-3">
+                      <button
+                        type="button"
+                        onClick={() => setHistorialId(caso.id)}
+                        className="font-semibold text-blue-600 hover:text-blue-800"
+                      >
+                        Ver historial
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -125,6 +137,13 @@ function MisSolicitudes() {
           </div>
         )}
       </div>
+
+      {historialId !== null && (
+        <HistorialTimeline
+          casoId={historialId}
+          onClose={() => setHistorialId(null)}
+        />
+      )}
     </div>
   );
 }

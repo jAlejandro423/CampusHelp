@@ -231,3 +231,28 @@ export async function asignarCaso(
 
   return response.json() as Promise<CasoCreado>;
 }
+
+// HU-08 · Historial de solo lectura, orden cronológico (lo ordena el BACK).
+// El solicitante solo ve sus casos (404 si es ajeno); los demás roles ven todo.
+export interface HistorialEvento {
+  id: number;
+  caso_id: number;
+  evento: string;
+  estado_anterior: string | null;
+  estado_nuevo: string | null;
+  usuario_id: number;
+  usuario: string;
+  fecha: string;
+  detalle: string | null;
+}
+
+export function obtenerHistorial(
+  casoId: number,
+  usuarioId: number
+): Promise<HistorialEvento[]> {
+  const params = new URLSearchParams();
+  params.set("usuario_id", String(usuarioId));
+  return getJson<HistorialEvento[]>(
+    `/api/casos/${casoId}/historial?${params.toString()}`
+  );
+}

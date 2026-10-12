@@ -13,6 +13,7 @@ import {
   colorPrioridad,
   formatearFecha,
 } from "../components/badges";
+import HistorialTimeline from "../components/HistorialTimeline";
 
 function BandejaSoporte() {
   const { usuario } = useUsuario();
@@ -22,6 +23,7 @@ function BandejaSoporte() {
   const [cambiandoId, setCambiandoId] = useState<number | null>(null);
   const [asignandoId, setAsignandoId] = useState<number | null>(null);
   const [errorFila, setErrorFila] = useState<Record<number, string>>({});
+  const [historialId, setHistorialId] = useState<number | null>(null);
 
   async function cargar() {
     try {
@@ -236,6 +238,13 @@ function BandejaSoporte() {
                                 {errorFila[caso.id]}
                               </p>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => setHistorialId(caso.id)}
+                              className="text-left text-xs font-semibold text-blue-600 hover:text-blue-800"
+                            >
+                              Ver historial
+                            </button>
                           </div>
                         )}
                       </td>
@@ -247,6 +256,13 @@ function BandejaSoporte() {
           </div>
         )}
       </div>
+
+      {historialId !== null && (
+        <HistorialTimeline
+          casoId={historialId}
+          onClose={() => setHistorialId(null)}
+        />
+      )}
     </div>
   );
 }
