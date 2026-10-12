@@ -13,6 +13,7 @@ import {
   colorPrioridad,
   formatearFecha,
 } from "../components/badges";
+import HistorialTimeline from "../components/HistorialTimeline";
 
 function BandejaSoporte() {
   const { usuario } = useUsuario();
@@ -22,6 +23,7 @@ function BandejaSoporte() {
   const [cambiandoId, setCambiandoId] = useState<number | null>(null);
   const [asignandoId, setAsignandoId] = useState<number | null>(null);
   const [errorFila, setErrorFila] = useState<Record<number, string>>({});
+  const [historialId, setHistorialId] = useState<number | null>(null);
 
   async function cargar() {
     try {
@@ -198,46 +200,52 @@ function BandejaSoporte() {
                         {formatearFecha(caso.fecha_creacion)}
                       </td>
                       <td className="py-3">
-                        {!puedeAsignarse && acciones.length === 0 ? (
-                          <span className="text-xs text-slate-400">
-                            Sin acciones
-                          </span>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            {puedeAsignarse && (
-                              <button
-                                type="button"
-                                disabled={ocupado}
-                                onClick={() => handleAsignarme(caso)}
-                                className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-60"
-                              >
-                                {asignandoId === caso.id
-                                  ? "Asignando…"
-                                  : "Asignarme"}
-                              </button>
-                            )}
-                            {acciones.map((siguiente) => (
-                              <button
-                                key={siguiente}
-                                type="button"
-                                disabled={ocupado}
-                                onClick={() =>
-                                  handleCambiarEstado(caso, siguiente)
-                                }
-                                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                              >
-                                {cambiandoId === caso.id
-                                  ? "Cambiando…"
-                                  : `Pasar a ${siguiente}`}
-                              </button>
-                            ))}
-                            {errorFila[caso.id] && (
-                              <p className="max-w-[220px] text-xs text-red-600">
-                                {errorFila[caso.id]}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {!puedeAsignarse && acciones.length === 0 && (
+                            <span className="text-xs text-slate-400">
+                              Sin acciones
+                            </span>
+                          )}
+                          {puedeAsignarse && (
+                            <button
+                              type="button"
+                              disabled={ocupado}
+                              onClick={() => handleAsignarme(caso)}
+                              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+                            >
+                              {asignandoId === caso.id
+                                ? "Asignando…"
+                                : "Asignarme"}
+                            </button>
+                          )}
+                          {acciones.map((siguiente) => (
+                            <button
+                              key={siguiente}
+                              type="button"
+                              disabled={ocupado}
+                              onClick={() =>
+                                handleCambiarEstado(caso, siguiente)
+                              }
+                              className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                            >
+                              {cambiandoId === caso.id
+                                ? "Cambiando…"
+                                : `Pasar a ${siguiente}`}
+                            </button>
+                          ))}
+                          {errorFila[caso.id] && (
+                            <p className="max-w-[220px] text-xs text-red-600">
+                              {errorFila[caso.id]}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setHistorialId(caso.id)}
+                            className="text-left text-xs font-semibold text-blue-600 hover:text-blue-800"
+                          >
+                            Ver historial
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -247,6 +255,13 @@ function BandejaSoporte() {
           </div>
         )}
       </div>
+
+      {historialId !== null && (
+        <HistorialTimeline
+          casoId={historialId}
+          onClose={() => setHistorialId(null)}
+        />
+      )}
     </div>
   );
 }
