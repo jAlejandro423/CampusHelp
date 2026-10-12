@@ -16,7 +16,7 @@ Registro de la ejecución real de los casos de prueba del taller. Cada caso indi
 | CP-04 | Cambio de estado válido | HU-05 | 2026-10-10 | ✅ Pasa |
 | CP-05 | Transición inválida | HU-05 | 2026-10-10 | ✅ Pasa |
 | CP-06 | Asignar agente | HU-04 | 2026-10-12 | ✅ Pasa |
-| CP-07 | Registrar diagnóstico y solución | HU-06 | — | ⏳ Pendiente (Sprint 2) |
+| CP-07 | Registrar diagnóstico y solución | HU-06 | 2026-10-12 | ✅ Pasa |
 | CP-08 | Devolver desde validación | HU-07 | — | ⏳ Pendiente (Sprint 2) |
 | CP-09 | Cerrar caso aprobado | HU-07 | — | ⏳ Pendiente (Sprint 2) |
 | CP-10 | Filtrar por tipo, área y prioridad | HU-09 | — | ⏳ Pendiente (Sprint 3) |
@@ -573,3 +573,146 @@ Con la base recargada desde los seeds, Diego se asignó el caso 1 (`200`, `fecha
 ### Conclusión
 
 HU-04 cumple CP-06, E2 a E5 y todas sus excepciones, incluidas la concurrencia y el *rollback*, y no se registraron defectos. Candidatos a casos propios en la #38: asignación simultánea del mismo caso y asignación de un caso `En análisis` sin agente.
+
+## HU-06 · Registrar diagnóstico y solución (#74)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-12 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `fdd94cb` (incluye #72 y #73) |
+| Base de datos | MySQL 8.0 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos, 4 atenciones y 21 registros de historial al inicio). Para probar un agente inactivo se agregó el usuario de prueba **Agente Inactivo** (id 7, agente, `activo = 0`) solo en esta base. |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantalla `/bandeja-soporte`, usuarios de prueba **Diego Torres** (id 3) y **María Prieto** (id 4), los dos agentes |
+
+En cada petición rechazada se revisaron el caso, sus atenciones y su historial en MySQL, para comprobar que no cambió nada.
+
+### E4 · No se pasa a En validación sin una atención con solución ✅
+
+Se ejecutó primero porque el caso `#3` de los seeds (`En atención`, asignado a Diego) solo tiene una atención con diagnóstico y sin solución.
+
+**Pasos:** en **Bandeja**, con Diego, pulsar **Pasar a En validación** en la fila del caso `#3`.
+
+**Esperado:** el sistema lo impide (`409`).
+
+**Obtenido:** la fila muestra "Para pasar a En validación, el caso debe tener una atención con solución.". En MySQL el caso 3 sigue `En atención`, con 1 atención y 4 filas de historial. Por API, con un caso nuevo cuya única atención no tiene solución, `PATCH /api/casos/7/estado` a `En validación` también responde `409` con el mismo mensaje.
+
+**Evidencia:** [`hu06-e4-sin-solucion.jpg`](../evidencias/pruebas/hu06-e4-sin-solucion.jpg)
+
+### E3 · Diagnóstico corto ✅
+
+**Pasos:** con Diego, pulsar **Registrar atención** en el caso `#3` y escribir "Falla" (5 caracteres) en el diagnóstico.
+
+**Esperado:** el sistema no deja guardar y el backend responde `400` sin guardar nada.
+
+**Obtenido:**
+- En la interfaz, el contador muestra **5 / mínimo 10** en rojo y **Guardar atención** queda desactivado.
+- Por API, `POST /api/casos/7/atenciones` responde `400` · "Datos inválidos" · "Diagnóstico mínimo de 10 caracteres." si el diagnóstico falta, si tiene 5 caracteres ("corto") o si son espacios con una sola letra. Con una solución de 3 caracteres responde "Solución mínimo de 10 caracteres.", y si fallan los dos campos, `detalles` trae un elemento por cada fallo.
+- No se agregó ninguna fila a `atencion` ni a `historial`.
+
+**Evidencia:** [`hu06-e3-diagnostico-corto.jpg`](../evidencias/pruebas/hu06-e3-diagnostico-corto.jpg)
+
+### CP-07 · Registrar diagnóstico y solución (E1) ✅
+
+**Pasos**
+1. En el mismo formulario del caso `#3`, con Diego, escribir:
+   - **Diagnóstico:** "La fuente de poder está quemada; el equipo no recibe energía."
+   - **Solución:** "Se reemplazó la fuente de poder y el equipo enciende normalmente."
+2. Pulsar **Guardar atención**.
+3. Consultar la atención y el historial en MySQL, y abrir de nuevo el formulario.
+
+**Esperado:** la atención queda guardada con su fecha y su agente, el historial registra `atencion` y el caso no cambia de estado.
+
+**Obtenido**
+- El modal se cierra y la bandeja se recarga. El caso `#3` sigue `En atención`.
+- En MySQL:
+
+  ```text
+  id  caso_id  diagnostico                                                  solucion                                                           fecha                agente_id
+  5   3        La fuente de poder está quemada; el equipo no recibe energía.  Se reemplazó la fuente de poder y el equipo enciende normalmente.  2026-10-12 17:00:47  3
+
+  id  evento    estado_anterior  estado_nuevo  usuario_id  fecha                detalle
+  22  atencion  En atención      En atención   3           2026-10-12 17:00:47  El agente registra diagnóstico y solución (HU-06).
+  ```
+
+- Al abrir de nuevo el formulario aparecen **Atenciones previas (2)**: la de los seeds y la nueva, con diagnóstico, solución, agente y fecha.
+- Por API, una atención **solo con diagnóstico** en el caso 7 responde `201` con `solucion = null` y también registra `atencion` en el historial.
+
+**Evidencia:** [`cp07-formulario.jpg`](../evidencias/pruebas/cp07-formulario.jpg) (antes) · [`cp07-atencion-guardada.jpg`](../evidencias/pruebas/cp07-atencion-guardada.jpg) (después)
+
+### E5 · Pasar a En validación con una atención con solución ✅
+
+**Pasos:** después de CP-07, con Diego, pulsar **Pasar a En validación** en el caso `#3` y abrir **Ver historial**.
+
+**Esperado:** el cambio se guarda y el historial registra `envio_validacion`.
+
+**Obtenido:** la fila muestra **En validación** y **Sin acciones**. En MySQL:
+
+```text
+id  estado         agente_id  fecha_cierre
+3   En validación  3          NULL
+
+id  evento            estado_anterior  estado_nuevo   usuario_id  fecha
+23  envio_validacion  En atención      En validación  3           2026-10-12 17:01:01
+```
+
+La línea de tiempo del caso muestra, en orden, **Atención registrada** y **Enviado a validación**.
+
+**Evidencia:** [`hu06-e5-en-validacion.jpg`](../evidencias/pruebas/hu06-e5-en-validacion.jpg) · [`hu06-historial.jpg`](../evidencias/pruebas/hu06-historial.jpg)
+
+### E2 · Agente no asignado ✅
+
+**Pasos**
+1. Abrir **Bandeja** con María Prieto.
+2. Por API, `POST /api/casos/7/atenciones` con `usuario_id` 4 (María) en el caso 7, asignado a Diego y `En atención`.
+
+**Esperado:** el sistema lo impide (`409`).
+
+**Obtenido:** María no ve **Registrar atención** en el caso `#3` de Diego. La petición responde `409` · "Solo el agente asignado registra la atención." y no se guarda nada.
+
+**Evidencia:** [`hu06-e2-otro-agente.jpg`](../evidencias/pruebas/hu06-e2-otro-agente.jpg)
+
+### Excepciones de HU-06
+
+Se ejecutaron con `POST /api/casos/:id/atenciones`, sobre el caso 7 (creado con `POST /api/casos`, asignado a Diego y pasado a `En atención`) salvo que se indique otro. En ninguna de las rechazadas cambió el caso, las atenciones ni el historial.
+
+| Situación | Pasos | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| El caso no existe | `id = 999` | `404` | `404` · "Caso no encontrado" · "No existe un caso con id 999." | ✅ |
+| `id` no es un entero positivo | `id = abc` y `id = 0` | `400` | `400` · "El id del caso debe ser un entero positivo." | ✅ |
+| `usuario_id` inválido | `"usuario_id": "x"` | `400` | `400` · "usuario_id debe ser un entero positivo." | ✅ |
+| El usuario no existe, está inactivo o no es agente | `usuario_id` 99, 7 (Agente Inactivo), 1 (solicitante) y 5 (validador) | `400` | `400` · "El usuario debe existir, estar activo y tener rol agente." | ✅ |
+| El usuario no es el agente asignado | María en el caso 7 (E2) · Diego en el caso 2 (`En análisis`, sin agente) | `409` | `409` · "Solo el agente asignado registra la atención." | ✅ |
+| El caso no está `En atención` | Diego en el caso 3 (`En validación`) y en el 5 (`Cerrada`) | `409` | `409` · "Solo se registra atención en un caso En atención." | ✅ |
+| Diagnóstico o solución inválidos | Ver E3 | `400` con un elemento en `detalles` por fallo | `400` con uno o dos elementos | ✅ |
+| `En atención → En validación` sin atención con solución | Ver E4 | `409` | `409` | ✅ |
+| Error de la base de datos | Se creó un *trigger* temporal que hace fallar todo `INSERT` en `historial` y se registró una atención con Diego en el caso 7 | `500` y *rollback* | `500` · "No se pudo registrar la atención". El caso 7 sigue con 2 atenciones y 5 filas de historial. Después se borró el *trigger*. | ✅ |
+
+> En el primer intento de la prueba de *rollback*, el *trigger* no se creó por un error de sintaxis del script de prueba, así que la petición se guardó normalmente (`201`, atención 7 y evento `atencion` 28 del caso 7). Se repitió con un *trigger* válido; la atención 7 queda como un registro válido más del caso 7.
+
+**Consulta de atenciones (`GET /api/casos/:id/atenciones`)**
+
+| Situación | Obtenido | Estado |
+|---|---|---|
+| Agente, caso 7 | `200` con la atención del caso | ✅ |
+| Validador (5) y solicitante dueño (Laura, 1), caso 3 | `200` con las 2 atenciones en orden de fecha y el nombre del agente | ✅ |
+| Solicitante ajeno (Carlos, 2), caso 3 | `404` · "Caso no encontrado" (no revela que existe) | ✅ |
+| Caso 999 | `404` | ✅ |
+| Sin `usuario_id` | `400` · "El id del caso y usuario_id deben ser enteros positivos." | ✅ |
+
+### Prueba de reinicio
+
+Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo (`/api/health` → `db: up`). En MySQL, el caso 3 sigue `En validación`, las atenciones 5, 6 y 7 conservan su fecha (la 5 y la 7, también su solución), y el historial conserva 28 filas. `GET /api/casos/3/atenciones?usuario_id=5` devuelve las 2 atenciones del caso. ✅
+
+### Observaciones
+
+- **El mensaje de E4 se queda en la fila:** después de guardar la atención con solución, la fila del caso `#3` sigue mostrando "Para pasar a En validación, el caso debe tener una atención con solución." hasta que se pulsa otra vez **Pasar a En validación**. No impide el flujo, así que no se registra como defecto; se puede limpiar el mensaje al recargar la bandeja.
+- **Texto del historial:** el evento `atencion` siempre dice "El agente registra diagnóstico y solución (HU-06).", también cuando la atención no trae solución (ya se sugirió en la revisión de la #72).
+- **Orden de las validaciones del 409:** en un caso sin agente, el backend responde "Solo el agente asignado registra la atención." antes de revisar el estado. Las dos causas dan `409`, así que cumple la tabla de excepciones.
+- En la consola del navegador solo aparece el `409` esperado de E4, y el log de la API no tiene errores.
+
+### Conclusión
+
+HU-06 cumple CP-07, E2 a E5, todas sus excepciones y el *rollback*, y no se registraron defectos. Candidatos a casos propios en la #38: atención solo con diagnóstico (solución opcional) y consulta de atenciones de un caso ajeno por un solicitante.
