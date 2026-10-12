@@ -105,12 +105,31 @@ async function cambiarEstado(casoIdRaw, datos) {
     if (nuevoEstado === 'En atención' && filas[0].agente_id === null) {
       throw createError(409, 'Para pasar a En atención, el caso debe tener un agente asignado.', []);
     }
+    // HU-06 (D-15, regla 6): a En validación solo con una atención con solución.
+    // El evento es 'envio_validacion', no 'cambio_estado'.
+    let evento = 'cambio_estado';
+    if (nuevoEstado === 'En validación') {
+      const [atenciones] = await conexion.query(
+        `SELECT id FROM atencion
+         WHERE caso_id = ? AND solucion IS NOT NULL AND TRIM(solucion) <> ''
+         LIMIT 1`,
+        [casoId]
+      );
+      if (atenciones.length === 0) {
+        throw createError(
+          409,
+          'Para pasar a En validación, el caso debe tener una atención con solución.',
+          []
+        );
+      }
+      evento = 'envio_validacion';
+    }
 
     await conexion.query('UPDATE caso SET estado = ? WHERE id = ?', [nuevoEstado, casoId]);
     await conexion.query(
       `INSERT INTO historial (caso_id, evento, estado_anterior, estado_nuevo, usuario_id, detalle)
-       VALUES (?, 'cambio_estado', ?, ?, ?, ?)`,
-      [casoId, actual, nuevoEstado, usuarioId, detalle]
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [casoId, evento, actual, nuevoEstado, usuarioId, detalle]
     );
 
     await conexion.commit();
