@@ -232,4 +232,17 @@ Las fichas están en `docs/historias/HU-04.md`, `HU-06.md`, `HU-07.md` y `HU-08.
 | Diagnóstico obligatorio ≥ 10; solución opcional, si llega ≥ 10 | R1 confirmada (D-15, #83): caso 3 de seeds ya tiene diagnóstico sin solución. |
 | Evento `atencion` (anterior = nuevo = `En atención`) en transacción; varias atenciones por caso | R3 y regla 4; una por devolución si hace falta. |
 | `En atención → En validación` exige atención con solución y deja `envio_validacion` | Regla 6 y R4 (D-15); entra con la historia que la necesita (HU-05, regla 8). |
-| GET con `usuario_id` válido (400 si no) y caso existente (404) | Suficiente para agente (HU-06) y validador (HU-07); sin control de propiedad (no lo pide la ficha). |
+| GET con `usuario_id` válido (400 si no) y caso existente (404) | Suficiente para agente (HU-06) y validador (HU-07). |
+| Solicitante con caso ajeno en GET → mismo `404` (auditoría #72) | RN-05 como el historial (D-17); la ficha no lo pedía, el hueco era del refinamiento. |
+
+## D-19 · POST validación HU-07 (Issue #75)
+
+`POST /api/casos/:id/validacion` con `{ usuario_id, accion, motivo? }` → `200` con el caso actualizado.
+
+| Decisión | Motivo |
+|---|---|
+| Servicio propio `validacionService.js` | Única vía a `Cerrada`/devolución (RN-08); no toca `estados.js` genérico. |
+| Solo rol **`validador`**, solo caso `En validación` (otro estado → `409`) | Reglas 1–2 y E4; resto de validaciones en `400 Datos inválidos`. |
+| Aprobar → `Cerrada` + `fecha_cierre = NOW()`, evento `cierre`; motivo opcional guardado si llega | E1/CP-09 y RN-13; diseño de HU-07. |
+| Devolver → `En atención` **conservando `agente_id`**, motivo ≥ 10 obligatorio en `detalle`, evento `devolucion` | E2/CP-08 y RN-13; el agente que conoce el problema lo retoma. |
+| `estado=` en `GET /api/casos` (invalido → `400`), combinable | R3/D-15: lo necesita Por validar (#76) y lo reutiliza HU-09. |

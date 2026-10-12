@@ -168,6 +168,19 @@ async function listarCasos(filtros) {
     parametros.push(usuarioId);
   }
 
+  // HU-07 (D-15): filtro estado= para Por validar; HU-09 lo reutiliza.
+  const ESTADOS_FILTRO = ['Pendiente', 'En análisis', 'En atención', 'En validación', 'Cerrada'];
+  const estadoRaw = filtros ? filtros.estado : undefined;
+  if (estadoRaw !== undefined && estadoRaw !== '') {
+    if (!ESTADOS_FILTRO.includes(estadoRaw)) {
+      throw createError(400, 'Datos inválidos', [
+        `estado inválido. Valores permitidos: ${ESTADOS_FILTRO.join(', ')}.`,
+      ]);
+    }
+    condiciones.push('k.estado = ?');
+    parametros.push(estadoRaw);
+  }
+
   // HU-03 · Bandeja del agente: solo casos no cerrados, P1 → P3 y, dentro de
   // cada prioridad, del más antiguo al más reciente. El ENUM prioridad se
   // ordenó como ('P1','P2','P3'), así que MySQL lo ordena en ese orden.
