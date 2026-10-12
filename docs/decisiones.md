@@ -220,3 +220,16 @@ Las fichas están en `docs/historias/HU-04.md`, `HU-06.md`, `HU-07.md` y `HU-08.
 | Orden `fecha ASC, id ASC` con `JOIN` al nombre del usuario | Línea de tiempo del más antiguo al más reciente (regla 1); cada fila trae `usuario` para E4. |
 | Solicitante con caso ajeno → `404` idéntico al de caso inexistente | R2 de HU-08 (D-15, pendiente de confirmar): RN-05 sin revelar qué casos existen. |
 | `usuario_id` ausente o usuario inexistente/inactivo → `400` | Quien consulta se identifica siempre (regla 4); el `404` queda para casos. |
+
+## D-18 · POST/GET atenciones HU-06 (Issue #72)
+
+`POST /api/casos/:id/atenciones` → `201`; `GET /api/casos/:id/atenciones` → `200` cronológico.
+
+| Decisión | Motivo |
+|---|---|
+| Servicio propio `atencionService.js` | No toca `casoService.js`; la atención tiene sus validaciones (asignado, estado, textos). |
+| Solo el **agente asignado** (`409` si es otro), solo en `En atención` (`409`) | E2 y regla 2; usuario no agente/inexistente/inactivo → `400`. |
+| Diagnóstico obligatorio ≥ 10; solución opcional, si llega ≥ 10 | R1 confirmada (D-15, #83): caso 3 de seeds ya tiene diagnóstico sin solución. |
+| Evento `atencion` (anterior = nuevo = `En atención`) en transacción; varias atenciones por caso | R3 y regla 4; una por devolución si hace falta. |
+| `En atención → En validación` exige atención con solución y deja `envio_validacion` | Regla 6 y R4 (D-15); entra con la historia que la necesita (HU-05, regla 8). |
+| GET con `usuario_id` válido (400 si no) y caso existente (404) | Suficiente para agente (HU-06) y validador (HU-07); sin control de propiedad (no lo pide la ficha). |
