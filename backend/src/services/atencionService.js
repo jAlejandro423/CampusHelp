@@ -110,12 +110,19 @@ async function listarAtenciones(casoIdRaw, usuarioIdRaw) {
       'El id del caso y usuario_id deben ser enteros positivos.',
     ]);
   }
-  const [usuarios] = await pool.query('SELECT id, activo FROM usuario WHERE id = ?', [usuarioId]);
+  const [usuarios] = await pool.query('SELECT id, rol, activo FROM usuario WHERE id = ?', [
+    usuarioId,
+  ]);
   if (usuarios.length === 0 || !usuarios[0].activo) {
     throw createError(400, 'Datos inválidos', ['El usuario indicado no existe o está inactivo.']);
   }
-  const [casos] = await pool.query('SELECT id FROM caso WHERE id = ?', [casoId]);
+  const [casos] = await pool.query('SELECT id, usuario_id FROM caso WHERE id = ?', [casoId]);
   if (casos.length === 0) {
+    throw createError(404, 'Caso no encontrado', [`No existe un caso con id ${casoId}.`]);
+  }
+  // RN-05 (auditoría #72): igual que el historial, el solicitante solo ve sus
+  // casos; uno ajeno responde el mismo 404 sin revelar si existe.
+  if (usuarios[0].rol === 'solicitante' && casos[0].usuario_id !== usuarioId) {
     throw createError(404, 'Caso no encontrado', [`No existe un caso con id ${casoId}.`]);
   }
   const [filas] = await pool.query(
