@@ -209,3 +209,14 @@ Las fichas están en `docs/historias/HU-04.md`, `HU-06.md`, `HU-07.md` y `HU-08.
 | `Pendiente` → `En análisis` al asignar; `En análisis` no cambia; un evento `asignacion` en transacción con `FOR UPDATE` | D-14; RN-10; anti-doble-asignación como HU-05. |
 | Regla "→ `En atención` requiere agente" en `cambiarEstado` | D-15: entra con la historia que la necesita (HU-05, regla 8). |
 | Seeds reescritos (21 historials): asignaciones D-14 + `cambio_estado` intermedios | Los eventos `Pendiente → En atención` violaban el mapa; ojo: todos deben **recargar su BD local**. |
+
+## D-17 · GET historial del caso HU-08 (Issue #78)
+
+`GET /api/casos/:id/historial?usuario_id=` → `200` con el historial en orden cronológico.
+
+| Decisión | Motivo |
+|---|---|
+| Servicio propio `historialService.js`, sin tocar `casoService.js` | Lectura aislada; el historial es de solo lectura y no comparte validaciones con el resto. |
+| Orden `fecha ASC, id ASC` con `JOIN` al nombre del usuario | Línea de tiempo del más antiguo al más reciente (regla 1); cada fila trae `usuario` para E4. |
+| Solicitante con caso ajeno → `404` idéntico al de caso inexistente | R2 de HU-08 (D-15, pendiente de confirmar): RN-05 sin revelar qué casos existen. |
+| `usuario_id` ausente o usuario inexistente/inactivo → `400` | Quien consulta se identifica siempre (regla 4); el `404` queda para casos. |
