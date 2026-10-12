@@ -200,3 +200,34 @@ export async function cambiarEstadoCaso(
 
   return response.json() as Promise<CasoCreado>;
 }
+
+// HU-04 · El agente se asigna a sí mismo. Solo casos sin agente en
+// Pendiente o En análisis (el backend decide; 409 si ya tiene agente).
+export async function asignarCaso(
+  casoId: number,
+  usuarioId: number
+): Promise<CasoCreado> {
+  const response = await fetch(`${API_URL}/api/casos/${casoId}/asignar`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ usuario_id: usuarioId }),
+  });
+
+  if (!response.ok) {
+    let error = "No se pudo asignar el caso";
+    let detalles: string[] = [];
+    try {
+      const data = (await response.json()) as {
+        error?: string;
+        detalles?: string[];
+      };
+      if (data.error) error = data.error;
+      if (Array.isArray(data.detalles)) detalles = data.detalles;
+    } catch {
+      // Respuesta no JSON: se usa el mensaje genérico.
+    }
+    throw new ApiError(response.status, error, detalles);
+  }
+
+  return response.json() as Promise<CasoCreado>;
+}
