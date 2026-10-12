@@ -15,7 +15,7 @@ Registro de la ejecución real de los casos de prueba del taller. Cada caso indi
 | CP-03 | Registrar solicitud de servicio | HU-01 | 2026-10-09 | ✅ Pasa |
 | CP-04 | Cambio de estado válido | HU-05 | 2026-10-10 | ✅ Pasa |
 | CP-05 | Transición inválida | HU-05 | 2026-10-10 | ✅ Pasa |
-| CP-06 | Asignar agente | HU-04 | — | ⏳ Pendiente (Sprint 2) |
+| CP-06 | Asignar agente | HU-04 | 2026-10-12 | ✅ Pasa |
 | CP-07 | Registrar diagnóstico y solución | HU-06 | — | ⏳ Pendiente (Sprint 2) |
 | CP-08 | Devolver desde validación | HU-07 | — | ⏳ Pendiente (Sprint 2) |
 | CP-09 | Cerrar caso aprobado | HU-07 | — | ⏳ Pendiente (Sprint 2) |
@@ -437,3 +437,139 @@ Se detuvieron MySQL (`mysqladmin shutdown`) y el backend, y se arrancaron de nue
 ### Conclusión
 
 HU-05 cumple CP-04, CP-05, E3 a E5 y sus excepciones, y no se registraron defectos. Solo quedó sin ejecutar la excepción de error de la base de datos, que se revisó en el código. Candidatos a casos propios en la #38: cambio con `detalle`, agente inactivo y dos cambios simultáneos sobre el mismo caso.
+
+## HU-04 · Asignarme un caso (#71)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-12 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `a386869` (incluye #69, #70 y #79) |
+| Base de datos | MySQL 8.0 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos y 21 registros de historial al inicio). Para probar un agente inactivo se agregó el usuario de prueba **Agente Inactivo** (id 7, agente, `activo = 0`) solo en esta base. |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantalla `/bandeja-soporte`, usuario de prueba **Diego Torres** (id 3, agente) |
+
+En cada petición rechazada se revisaron el caso y su historial en MySQL antes y después, para comprobar que no cambió nada.
+
+### CP-06 · Asignar agente (E1) ✅
+
+**Pasos**
+1. En **Bandeja**, con Diego Torres, pulsar **Asignarme** en la fila del caso `#1` (`Pendiente`, sin agente).
+2. Consultar el caso y su historial en MySQL.
+
+**Esperado:** se guardan el responsable y la fecha de asignación, el caso pasa a `En análisis` y el historial registra `asignacion`.
+
+**Obtenido**
+- La bandeja se recarga y la fila `#1` muestra **En análisis**, **Diego Torres** como agente y el botón **Pasar a En atención**. El botón **Asignarme** desaparece.
+- En MySQL:
+
+  ```text
+  id  estado       agente_id  fecha_asignacion
+  1   En análisis  3          2026-10-12 14:18:29
+  ```
+
+- El historial del caso 1 tiene una sola fila nueva:
+
+  ```text
+  id  evento      estado_anterior  estado_nuevo  usuario_id  fecha                detalle
+  22  asignacion  Pendiente        En análisis   3           2026-10-12 14:18:29  El agente asume la atención del caso (HU-04).
+  ```
+
+**Evidencia:** [`hu04-e5-boton.jpg`](../evidencias/pruebas/hu04-e5-boton.jpg) (antes) · [`cp06-asignar.jpg`](../evidencias/pruebas/cp06-asignar.jpg) (después)
+
+### E2 · El caso ya tiene agente ✅
+
+**Pasos:** con el caso 1 ya asignado a Diego, `PATCH /api/casos/1/asignar` con `usuario_id` 4 (María) y luego con 3 (Diego).
+
+**Esperado:** `409` y no cambia nada.
+
+**Obtenido:** las dos peticiones responden `409` · "El caso ya tiene un agente asignado.". El caso 1 sigue con `agente_id = 3` y la misma `fecha_asignacion`, y no se agrega ninguna fila al historial.
+
+### E3 · Caso En análisis sin agente ✅
+
+**Pasos**
+1. En **Bandeja**, con Diego, pulsar **Asignarme** en la fila del caso `#2` (`En análisis`, sin agente).
+2. Abrir **Ver historial** del caso 2 y consultarlo en MySQL.
+
+**Esperado:** Diego queda como responsable y el estado sigue `En análisis`.
+
+**Obtenido**
+
+```text
+id  estado       agente_id  fecha_asignacion
+2   En análisis  3          2026-10-12 14:18:48
+
+id  evento         estado_anterior  estado_nuevo  usuario_id  fecha
+2   creacion       NULL             Pendiente     2           2026-10-06 10:30:00
+3   cambio_estado  Pendiente        En análisis   3           2026-10-06 11:00:00
+23  asignacion     En análisis      En análisis   3           2026-10-12 14:18:48
+```
+
+La línea de tiempo muestra el evento **Agente asignado** con `En análisis → En análisis`.
+
+**Evidencia:** [`hu04-e3-en-analisis.jpg`](../evidencias/pruebas/hu04-e3-en-analisis.jpg)
+
+### E4 · No se pasa a En atención sin agente ✅
+
+**Pasos:** antes de asignarlo, en **Bandeja**, pulsar **Pasar a En atención** en la fila del caso `#2` (`En análisis`, sin agente).
+
+**Esperado:** el sistema lo impide (`409`).
+
+**Obtenido:** la fila muestra "Para pasar a En atención, el caso debe tener un agente asignado.". En MySQL el caso 2 sigue `En análisis`, sin agente y con sus 2 filas de historial. Con agente, la regla deja pasar: `PATCH /api/casos/1/estado` a `En atención` con Diego responde `200`.
+
+**Evidencia:** [`hu04-e4-sin-agente.jpg`](../evidencias/pruebas/hu04-e4-sin-agente.jpg)
+
+### E5 · El botón solo aparece donde corresponde ✅
+
+**Pasos:** abrir **Bandeja** con Diego antes de asignar nada.
+
+**Esperado:** **Asignarme** solo en los casos sin agente que están `Pendiente` o `En análisis`.
+
+**Obtenido**
+
+| Caso | Estado | Agente | ¿Asignarme? |
+|---|---|---|---|
+| #1 | Pendiente | Sin asignar | Sí |
+| #2 | En análisis | Sin asignar | Sí |
+| #3 | En atención | Diego Torres | No |
+| #4 | En validación | María Prieto | No |
+
+Después de asignarse, el botón desaparece de la fila (CP-06 y E3).
+
+**Evidencia:** [`hu04-e5-boton.jpg`](../evidencias/pruebas/hu04-e5-boton.jpg)
+
+### Excepciones de HU-04
+
+Todas se ejecutaron con `PATCH /api/casos/:id/asignar`, y en ninguna de las rechazadas cambió el caso ni el historial.
+
+| Situación | Pasos | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| El caso no existe | `id = 999` | `404` | `404` · "Caso no encontrado" · "No existe un caso con id 999." | ✅ |
+| `id` no es un entero positivo | `id = abc` y `id = 0` | `400` | `400` · "El id del caso debe ser un entero positivo." | ✅ |
+| `usuario_id` inválido | Sin cuerpo y con `"usuario_id": "x"` | `400` | `400` · "usuario_id debe ser un entero positivo." | ✅ |
+| El usuario no existe | `usuario_id = 99` | `400` | `400` · "El usuario indicado no existe." | ✅ |
+| El usuario está inactivo | `usuario_id = 7` (Agente Inactivo) | `400` | `400` · "El usuario indicado está inactivo." | ✅ |
+| El usuario no es agente | `usuario_id` 1 (solicitante), 5 (validador) y 6 (administradora) | `400` | `400` · "Solo un usuario con rol agente puede asignarse casos." | ✅ |
+| El caso ya tiene agente | Casos 3 (`En atención`), 4 (`En validación`) y 5 (`Cerrada`) | `409` | `409` · "El caso ya tiene un agente asignado." | ✅ |
+| Estado no asignable, sin agente | Se insertaron por SQL, solo en esta base, el caso 9 (`Cerrada`) y el 10 (`En validación`), los dos sin agente, para probar la regla de estado por separado | `409` | `409` · "Solo se asignan casos Pendiente o En análisis (está Cerrada)." y "(está En validación)." Siguen sin agente y sin historial. | ✅ |
+| Dos agentes a la vez | Caso nuevo 7 (`POST /api/casos`, `Pendiente`). Dos `PATCH /api/casos/7/asignar` en paralelo, de Diego y de María | Uno `200` y otro `409`, con un solo evento | María recibe `200` y Diego `409` · "El caso ya tiene un agente asignado.". El caso queda `En análisis` con `agente_id = 4` y **una** sola fila `asignacion` (`Pendiente → En análisis`). | ✅ |
+| Error de la base de datos | Caso nuevo 8 (`Pendiente`). Se creó un *trigger* temporal que hace fallar el `INSERT` en `historial` y se pidió la asignación con Diego | `500` y *rollback* | `500` · "No se pudo asignar el caso". El caso 8 sigue `Pendiente`, sin agente ni `fecha_asignacion`, y solo con su fila `creacion`. Después se borró el *trigger*. | ✅ |
+
+### Prueba de reinicio
+
+Con la base recargada desde los seeds, Diego se asignó el caso 1 (`200`, `fecha_asignacion = 2026-10-12 14:20:33`). Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo (`/api/health` → `db: up`). En MySQL, el caso 1 sigue `En análisis`, con `agente_id = 3`, la misma fecha y su fila `asignacion`, y el historial conserva 22 filas. `GET /api/casos?bandeja=1` muestra el caso 1 con **Diego Torres**. ✅
+
+> El primer intento de esta prueba se descartó: un script del entorno de prueba, que había quedado en segundo plano, volvió a cargar `schema.sql` y `seeds.sql` al reiniciar MySQL. No es un fallo de la aplicación.
+
+### Observaciones
+
+- **"Pasar a En atención" aparece en casos sin agente:** la bandeja ofrece ese botón en los casos `En análisis` sin agente, aunque el backend siempre lo rechaza con `409` (E4). La regla se cumple y el mensaje es claro, así que no se registra como defecto. Se sugirió ocultar el botón en la revisión del PR #87.
+- **Orden de las validaciones del 409:** si el caso tiene agente, el backend responde "El caso ya tiene un agente asignado." aunque además esté `En atención`, `En validación` o `Cerrada`. Las dos causas dan `409`, así que cumple la tabla de excepciones.
+- **Resuelto lo pendiente de HU-05:** ahora se exige un agente para pasar a `En atención` (E4), y los seeds ya registran las asignaciones como `Pendiente → En análisis` o `En análisis → En análisis` (D-14).
+- En la consola del navegador solo aparece el `409` esperado de E4.
+
+### Conclusión
+
+HU-04 cumple CP-06, E2 a E5 y todas sus excepciones, incluidas la concurrencia y el *rollback*, y no se registraron defectos. Candidatos a casos propios en la #38: asignación simultánea del mismo caso y asignación de un caso `En análisis` sin agente.
