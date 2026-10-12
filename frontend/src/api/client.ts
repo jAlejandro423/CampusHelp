@@ -256,3 +256,55 @@ export function obtenerHistorial(
     `/api/casos/${casoId}/historial?${params.toString()}`
   );
 }
+
+// HU-06 · Diagnóstico obligatorio (≥10), solución opcional (si va, ≥10).
+// Solo el agente asignado en un caso En atención (el backend decide).
+export interface Atencion {
+  id: number;
+  caso_id: number;
+  diagnostico: string;
+  solucion: string | null;
+  fecha: string;
+  agente_id: number;
+  agente: string;
+}
+
+export function obtenerAtenciones(
+  casoId: number,
+  usuarioId: number
+): Promise<Atencion[]> {
+  const params = new URLSearchParams();
+  params.set("usuario_id", String(usuarioId));
+  return getJson<Atencion[]>(
+    `/api/casos/${casoId}/atenciones?${params.toString()}`
+  );
+}
+
+export async function registrarAtencion(
+  casoId: number,
+  payload: { usuario_id: number; diagnostico: string; solucion?: string }
+): Promise<Atencion> {
+  const response = await fetch(`${API_URL}/api/casos/${casoId}/atenciones`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let error = "No se pudo registrar la atención";
+    let detalles: string[] = [];
+    try {
+      const data = (await response.json()) as {
+        error?: string;
+        detalles?: string[];
+      };
+      if (data.error) error = data.error;
+      if (Array.isArray(data.detalles)) detalles = data.detalles;
+    } catch {
+      // Respuesta no JSON: se usa el mensaje genérico.
+    }
+    throw new ApiError(response.status, error, detalles);
+  }
+
+  return response.json() as Promise<Atencion>;
+}
