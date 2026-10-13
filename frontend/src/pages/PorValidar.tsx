@@ -145,7 +145,7 @@ function PorValidar() {
       )}
 
       <div className="mt-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        {aviso && !cargando && !error && casos.length > 0 && (
+        {aviso && !cargando && !error && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             {aviso}
           </div>

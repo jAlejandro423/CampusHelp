@@ -21,6 +21,8 @@ el mensaje. Los demás casos quedaban ocultos hasta F5.
 - `npm run build` y `lint` ok (0 errores).
 - Reproducción de la issue: con dos casos En validación, cerrar uno por otra
   vía y aprobarlo → 409 en `aviso` + fila, el otro caso sigue visible.
+- Si el caso que falla era el último de la lista, el aviso se sigue mostrando
+  encima de "No hay casos pendientes de validación" (hallado en la auditoría).
 - Sin conflictos: solo `PorValidar.tsx` + este doc.
 
 ## Trazabilidad
