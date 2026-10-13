@@ -13,9 +13,13 @@ import HistorialTimeline from "../components/HistorialTimeline";
 const MOTIVO_MINIMO = 10;
 
 function PorValidar() {
-  const { usuario } = useUsuario();
+  const { usuario, loading: loadingUsuario } = useUsuario();
   const [casos, setCasos] = useState<CasoResumen[]>([]);
   const [soluciones, setSoluciones] = useState<Record<number, string>>({});
+  const [solucionesListas, setSolucionesListas] = useState(false);
+  const [errorSolucion, setErrorSolucion] = useState<Record<number, boolean>>(
+    {}
+  );
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
@@ -24,30 +28,36 @@ function PorValidar() {
   const [motivo, setMotivo] = useState("");
   const [historialId, setHistorialId] = useState<number | null>(null);
 
-  async function cargar() {
+  async function cargar(opciones?: { silencioso?: boolean }) {
     try {
-      setCargando(true);
-      setError("");
+      if (!opciones?.silencioso) {
+        setCargando(true);
+        setError("");
+      }
       const data = await obtenerPorValidar();
       setCasos(data);
       // Última solución de cada caso para que el validador la revise (E5).
-      if (usuario) {
-        const pares = await Promise.all(
-          data.map(async (c) => {
-            try {
-              const atenciones = await obtenerAtenciones(c.id, usuario.id);
-              const conSolucion = atenciones.filter(
-                (a) => a.solucion && a.solucion.trim() !== ""
-              );
-              const ultima = conSolucion[conSolucion.length - 1];
-              return [c.id, ultima?.solucion ?? ""] as [number, string];
-            } catch {
-              return [c.id, ""] as [number, string];
-            }
-          })
-        );
-        setSoluciones(Object.fromEntries(pares));
-      }
+      // Requiere usuario (GET atenciones exige usuario_id).
+      if (!usuario) return;
+      setSolucionesListas(false);
+      const pares = await Promise.all(
+        data.map(async (c) => {
+          try {
+            const atenciones = await obtenerAtenciones(c.id, usuario.id);
+            const conSolucion = atenciones.filter(
+              (a) => a.solucion && a.solucion.trim() !== ""
+            );
+            const ultima = conSolucion[conSolucion.length - 1];
+            setErrorSolucion((prev) => ({ ...prev, [c.id]: false }));
+            return [c.id, ultima?.solucion ?? ""] as [number, string];
+          } catch {
+            setErrorSolucion((prev) => ({ ...prev, [c.id]: true }));
+            return [c.id, ""] as [number, string];
+          }
+        })
+      );
+      setSoluciones(Object.fromEntries(pares));
+      setSolucionesListas(true);
     } catch (err) {
       console.error("Error cargando por validar:", err);
       setError("No se pudieron cargar los casos por validar.");
@@ -58,9 +68,15 @@ function PorValidar() {
   }
 
   useEffect(() => {
+    if (loadingUsuario) return;
+    if (!usuario) {
+      setCargando(false);
+      setError("No hay usuario activo para cargar los casos.");
+      return;
+    }
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadingUsuario, usuario?.id]);
 
   async function handleValidar(
     caso: CasoResumen,
@@ -90,15 +106,20 @@ function PorValidar() {
       });
       setMotivoId(null);
       setMotivo("");
-      await cargar();
+      setError("");
+      setErrorFila((prev) => ({ ...prev, [caso.id]: "" }));
+      await cargar({ silencioso: true });
     } catch (err) {
       console.error(`Error validando caso ${caso.id}:`, err);
       const mensaje =
         err instanceof ApiError
           ? [err.message, ...err.detalles].filter(Boolean).join(" ")
           : "No se pudo validar el caso. Intenta de nuevo.";
+      await cargar({ silencioso: true });
+      // Si el caso cambió (409), la recarga lo saca de la lista y el error
+      // de la fila ya no se vería: se muestra también arriba.
+      setError(mensaje);
       setErrorFila((prev) => ({ ...prev, [caso.id]: mensaje }));
-      await cargar();
     } finally {
       setProcesandoId(null);
     }
@@ -162,7 +183,11 @@ function PorValidar() {
                     Solución del agente
                   </p>
                   <p className="mt-1 text-sm text-slate-800">
-                    {soluciones[caso.id] || "Cargando solución…"}
+                    {!solucionesListas
+                      ? "Cargando solución…"
+                      : errorSolucion[caso.id]
+                        ? "No se pudo cargar la solución."
+                        : soluciones[caso.id] || "Sin solución registrada"}
                   </p>
                 </div>
 
@@ -190,7 +215,7 @@ function PorValidar() {
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        disabled={procesandoId === caso.id}
+                        disabled={!esValidador || procesandoId === caso.id}
                         onClick={() => handleValidar(caso, "devolver")}
                         className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
                       >
@@ -214,7 +239,7 @@ function PorValidar() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      disabled={procesandoId === caso.id}
+                      disabled={!esValidador || procesandoId === caso.id}
                       onClick={() => handleValidar(caso, "aprobar")}
                       className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
                     >
@@ -222,7 +247,7 @@ function PorValidar() {
                     </button>
                     <button
                       type="button"
-                      disabled={procesandoId === caso.id}
+                      disabled={!esValidador || procesandoId === caso.id}
                       onClick={() => {
                         setMotivoId(caso.id);
                         setMotivo("");

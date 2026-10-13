@@ -1,6 +1,6 @@
 # Issue #76 · [HU-07][FRONT] Vista Por validar
 
-Rama: `feat/76-vista-por-validar` (desde `feat/73-formulario-atencion`).
+Rama: `feat/76-vista-por-validar` (desde `develop` en `fdd94cb`).
 Ficha: `docs/historias/HU-07.md` (reglas 1-8, E1-E5).
 
 ## Contrato BACK (services/validacionService.js, ya en develop)
@@ -16,9 +16,12 @@ Ficha: `docs/historias/HU-07.md` (reglas 1-8, E1-E5).
 - `src/api/client.ts`: `obtenerPorValidar()` + `validarCaso()`.
 - `src/pages/PorValidar.tsx` (era placeholder): tarjetas con título,
   categoría, agente, prioridad y **última solución** (`GET atenciones`,
-  última con solución no vacía); **Aprobar** directo y **Devolver** con
-  motivo inline (valida ≥10 en cliente y muestra el `400/409` del backend);
-  recarga al terminar; botón **Ver historial** (cierra el pendiente de #79).
+  última con solución no vacía; carga cuando el usuario está listo y
+  distingue cargando / sin solución / error). **Aprobar** directo y
+  **Devolver** con motivo inline (≥10 en cliente y muestra el `400/409` del
+  backend arriba y en la fila); recarga silenciosa sin parpadeo; botones
+  desactivados si no eres validador; botón **Ver historial** (cierra el
+  pendiente de #79).
 - Aviso si el usuario no es validador; aprobado sale de la lista (ya no es
   `En validación`), devuelto también (vuelve a `En atención`).
 
