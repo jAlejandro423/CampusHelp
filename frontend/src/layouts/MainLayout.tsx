@@ -1,5 +1,5 @@
-import { type ChangeEvent, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { type ChangeEvent, useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useUsuario } from "../context/UsuarioContext";
 
 interface MenuItem {
@@ -104,6 +104,8 @@ function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { usuario: selectedUser, usuarios: users, setUsuario, loading, error } =
     useUsuario();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const loadingUsers = loading;
   const errorUsers = error;
@@ -125,6 +127,24 @@ function MainLayout() {
   const visibleMenuItems = selectedUser
     ? menuItems.filter((item) => item.roles.includes(selectedUser.rol))
     : [];
+
+  /*
+   * Al cambiar de usuario, si la ruta actual no pertenece al nuevo rol
+   * (incluye subrutas como /mis-solicitudes/:id), redirigir a la primera
+   * opción de su menú en lugar de dejarlo en una pantalla ajena.
+   */
+  useEffect(() => {
+    if (!selectedUser || visibleMenuItems.length === 0) return;
+    const permitida = visibleMenuItems.some(
+      (item) =>
+        location.pathname === item.path ||
+        location.pathname.startsWith(`${item.path}/`)
+    );
+    if (!permitida) {
+      navigate(visibleMenuItems[0].path, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUser?.id, location.pathname]);
 
   return (
     <div className="min-h-screen bg-slate-50">
