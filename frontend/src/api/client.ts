@@ -150,6 +150,51 @@ export function obtenerCasos(): Promise<CasoResumen[]> {
   return getJson<CasoResumen[]>("/api/casos");
 }
 
+// HU-09 · Filtros combinables con AND en el backend (R1). Vacío no restringe.
+export interface FiltrosCasos {
+  estado?: string;
+  tipo?: string;
+  area_id?: number | "";
+  categoria_id?: number | "";
+  prioridad?: string;
+}
+
+export async function filtrarCasos(
+  filtros: FiltrosCasos
+): Promise<CasoResumen[]> {
+  const params = new URLSearchParams();
+  if (filtros.estado) params.set("estado", filtros.estado);
+  if (filtros.tipo) params.set("tipo", filtros.tipo);
+  if (filtros.area_id !== undefined && filtros.area_id !== "") {
+    params.set("area_id", String(filtros.area_id));
+  }
+  if (filtros.categoria_id !== undefined && filtros.categoria_id !== "") {
+    params.set("categoria_id", String(filtros.categoria_id));
+  }
+  if (filtros.prioridad) params.set("prioridad", filtros.prioridad);
+  const query = params.toString();
+
+  const response = await fetch(
+    `${API_URL}/api/casos${query ? `?${query}` : ""}`
+  );
+  if (!response.ok) {
+    let error = "No se pudieron filtrar los casos";
+    let detalles: string[] = [];
+    try {
+      const data = (await response.json()) as {
+        error?: string;
+        detalles?: string[];
+      };
+      if (data.error) error = data.error;
+      if (Array.isArray(data.detalles)) detalles = data.detalles;
+    } catch {
+      // Respuesta no JSON: se usa el mensaje genérico.
+    }
+    throw new ApiError(response.status, error, detalles);
+  }
+  return response.json() as Promise<CasoResumen[]>;
+}
+
 // HU-03 · Bandeja del agente: usa el BACK #29.
 // GET /api/casos?bandeja=1 excluye Cerrada y ordena por prioridad
 // (P1→P3) y antigüedad (más antiguo primero). Las reglas viven en el backend.
