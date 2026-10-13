@@ -22,11 +22,41 @@ export interface Categoria {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+export class ApiError extends Error {
+  status: number;
+  detalles: string[];
+
+  constructor(status: number, message: string, detalles: string[] = []) {
+    super(message);
+    this.status = status;
+    this.detalles = detalles;
+  }
+}
+
+async function leerError(
+  response: Response,
+  defecto: string
+): Promise<ApiError> {
+  let error = defecto;
+  let detalles: string[] = [];
+  try {
+    const data = (await response.json()) as {
+      error?: string;
+      detalles?: string[];
+    };
+    if (data.error) error = data.error;
+    if (Array.isArray(data.detalles)) detalles = data.detalles;
+  } catch {
+    // Respuesta no JSON: se usa el mensaje por defecto.
+  }
+  return new ApiError(response.status, error, detalles);
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_URL}${path}`);
 
   if (!response.ok) {
-    throw new Error(`GET ${path} falló con estado ${response.status}`);
+    throw await leerError(response, `GET ${path} falló con estado ${response.status}`);
   }
 
   return response.json() as Promise<T>;
@@ -84,17 +114,6 @@ export interface CasoCreado {
   fecha_creacion: string;
   fecha_asignacion: string | null;
   fecha_cierre: string | null;
-}
-
-export class ApiError extends Error {
-  status: number;
-  detalles: string[];
-
-  constructor(status: number, message: string, detalles: string[] = []) {
-    super(message);
-    this.status = status;
-    this.detalles = detalles;
-  }
 }
 
 export async function crearCaso(payload: CrearCasoPayload): Promise<CasoCreado> {

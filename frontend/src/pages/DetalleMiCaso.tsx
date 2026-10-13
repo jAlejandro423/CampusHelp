@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { obtenerDetalle } from "../api/client";
+import { obtenerDetalle, ApiError } from "../api/client";
 import type { DetalleCaso } from "../api/client";
 import { useUsuario } from "../context/UsuarioContext";
 import {
@@ -33,8 +33,17 @@ function DetalleMiCaso() {
         setCargando(true);
         setError("");
         setCaso(await obtenerDetalle(Number(id), usuario.id));
-      } catch {
-        setError("Caso no encontrado");
+      } catch (err) {
+        console.error(`Error cargando detalle del caso ${id}:`, err);
+        // DEF-03: "Caso no encontrado" solo ante 404; otros errores muestran
+        // su mensaje para no hacer creer que el caso no existe.
+        if (err instanceof ApiError && err.status === 404) {
+          setError("Caso no encontrado");
+        } else if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError("No se pudo cargar el caso. Intenta de nuevo.");
+        }
         setCaso(null);
       } finally {
         setCargando(false);
