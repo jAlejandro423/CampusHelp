@@ -308,3 +308,42 @@ export async function registrarAtencion(
 
   return response.json() as Promise<Atencion>;
 }
+
+// HU-07 · Solo En validación (filtro estado=, adelantado de HU-09).
+// Aprobar → Cerrada + fecha_cierre; devolver (motivo ≥10) → En atención.
+export function obtenerPorValidar(): Promise<CasoResumen[]> {
+  const params = new URLSearchParams();
+  params.set("estado", "En validación");
+  return getJson<CasoResumen[]>(`/api/casos?${params.toString()}`);
+}
+
+export type AccionValidacion = "aprobar" | "devolver";
+
+export async function validarCaso(
+  casoId: number,
+  payload: { usuario_id: number; accion: AccionValidacion; motivo?: string }
+): Promise<CasoCreado> {
+  const response = await fetch(`${API_URL}/api/casos/${casoId}/validacion`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let error = "No se pudo validar el caso";
+    let detalles: string[] = [];
+    try {
+      const data = (await response.json()) as {
+        error?: string;
+        detalles?: string[];
+      };
+      if (data.error) error = data.error;
+      if (Array.isArray(data.detalles)) detalles = data.detalles;
+    } catch {
+      // Respuesta no JSON: se usa el mensaje genérico.
+    }
+    throw new ApiError(response.status, error, detalles);
+  }
+
+  return response.json() as Promise<CasoCreado>;
+}
