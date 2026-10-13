@@ -56,3 +56,32 @@ Cada sub-issue tiene en su descripción el bloque **🔗 Dependencias** con lo q
 - **Tiempo:** el sprint dura una noche y la mañana de la entrega. Ningún PR puede quedar esperando revisión: se revisa apenas se abre.
 - **Capacidad:** el Sprint 2 completó 18 puntos en 2 días (plan: 1). Este compromete 14 puntos más la documentación final (#38–#41).
 - **Entrega:** si algo no queda listo, se entrega lo que esté en `develop` y funcione, sin pantallas a medias.
+
+## Sprint Review (2026-10-13)
+
+Demo del incremento sobre `develop` (`e740252`), con una base MySQL limpia cargada con `db/schema.sql` y `db/seeds.sql` (6 casos, 4 atenciones, 21 registros de historial y 16 categorías al inicio).
+
+| # | Paso de la demo | HU | Resultado | Evidencia |
+|---|---|---|---|---|
+| 1 | Ana Admin abre **Casos** y filtra por tipo `Incidente`, prioridad `P1` y área `Red y conectividad` (CP-10). | HU-09 | Solo aparece el #1, "Sin acceso a Wi-Fi institucional en biblioteca". Es el único caso de la BD que cumple los tres filtros. | [01-hu09-filtros.jpg](../evidencias/reviews/sprint-3/01-hu09-filtros.jpg) |
+| 2 | Ana abre **Indicadores**. | HU-10 | 6 casos, 7.1 h de creación a asignación (sobre 4 casos), 41.0 h de creación a cierre (sobre 2 casos) y los conteos por estado, tipo, prioridad y área, iguales a los de la BD. | [02-hu10-indicadores.jpg](../evidencias/reviews/sprint-3/02-hu10-indicadores.jpg) |
+| 3 | Ana abre **Categorías** y crea "VPN" en `Red y conectividad`. | HU-11 | VPN aparece en la lista como `Activa` (id 17). | [03-hu11-crear-categoria.jpg](../evidencias/reviews/sprint-3/03-hu11-crear-categoria.jpg) |
+| 4 | Laura Gómez abre **Crear Caso**, elige `Red y conectividad` y registra el incidente "No conecta la VPN desde casa" con la categoría VPN. | HU-11, HU-01 | VPN aparece en el registro y se crea el caso #7 en `Pendiente`, con la categoría VPN. | [04-hu11-registro-vpn.jpg](../evidencias/reviews/sprint-3/04-hu11-registro-vpn.jpg) |
+| 5 | Laura abre el detalle de su caso #5 desde **Mis Solicitudes**. | HU-12 | Se ven los datos del caso, el agente, las tres fechas, la atención con diagnóstico y solución, y el historial completo. | [05-hu12-detalle.jpg](../evidencias/reviews/sprint-3/05-hu12-detalle.jpg) |
+| 6 | Se detienen y se arrancan de nuevo MySQL y el backend. Ana filtra los casos por `Red y conectividad` y `VPN`. | Persistencia | Aparece el #7 con la categoría VPN. MySQL conserva 7 casos, 4 atenciones, 22 registros de historial y 17 categorías. | [06-persistencia.jpg](../evidencias/reviews/sprint-3/06-persistencia.jpg) |
+
+Durante la demo no hubo errores en la consola del navegador ni en el log de la API.
+
+DEF-02 (#93) se corrigió con el PR #110 y se cerró el 2026-10-13.
+
+**Conclusión:** el Sprint Goal se cumplió. Las cuatro historias (14 puntos) quedaron en Done el 2026-10-13, la fecha del plan del Planning, y el defecto que venía del Sprint 2 quedó cerrado. Queda abierto un defecto de interfaz no crítico, DEF-03 (#123), para corregir antes de la entrega. Con este incremento están todas las historias del backlog (HU-01 a HU-12).
+
+Los resultados detallados de las pruebas (CP-10 y los escenarios de HU-09 a HU-12) están en [`docs/pruebas/casos_de_prueba.md`](../pruebas/casos_de_prueba.md).
+
+## Retrospectiva
+
+[`docs/retrospectivas/sprint-3.md`](../retrospectivas/sprint-3.md)
+
+## Evidencia del tablero
+
+Como en los sprints anteriores, el flujo se justifica con el [roadmap del Project](https://github.com/users/jAlejandro423/projects/1/views/4), donde cada issue cerrada está ubicada en su fecha real de cierre.

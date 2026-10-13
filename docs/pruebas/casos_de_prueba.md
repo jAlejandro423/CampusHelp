@@ -1461,13 +1461,25 @@ Primero se ejecutaron los escenarios por la API (un script de Python con `urllib
 
 Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo. `GET /api/casos/4?usuario_id=2` sigue En atención con las atenciones 2 y 5, el #5 sigue Cerrada con su `fecha_cierre` y una atención, y Laura sigue recibiendo `404` al pedir el #6. En la pantalla, Carlos ve el #4 con "Atenciones (2)". ✅
 
+### Defecto encontrado
+
+**DEF-03 (#123) · El detalle del caso muestra "Caso no encontrado" ante cualquier error** (P3)
+
+| Campo | Valor |
+|---|---|
+| Pasos | 1. Provocar un error del servidor: `RENAME TABLE atencion TO atencion_x`. 2. Con Ana (o Laura), abrir `/mis-solicitudes/5`. 3. Restaurar la tabla. |
+| Esperado | "Caso no encontrado" solo con el `404`. En los demás casos, el mensaje de la API o "No se pudo cargar el caso". |
+| Obtenido | La API responde `500` y la pantalla muestra "Caso no encontrado", igual que con un caso inexistente o ajeno. |
+| Causa | El `catch` de `frontend/src/pages/DetalleMiCaso.tsx:36` asigna siempre "Caso no encontrado", sin mirar el código de la respuesta. |
+| Impacto | Bajo: no impide el flujo ni expone datos de otros usuarios. Se reportó como observación en la auditoría de la #107 (PR #118), que se fusionó sin corregirlo, y se registró como defecto al cerrar el sprint. |
+| Estado | Abierto |
+
 ### Observaciones
 
-- **La pantalla muestra "Caso no encontrado" ante cualquier error:** con la tabla `atencion` renombrada, la API responde `500` y la pantalla del #5 (como Ana) muestra "Caso no encontrado", igual que con un `404`. El `catch` de `frontend/src/pages/DetalleMiCaso.tsx:36` no distingue el código de la respuesta. Ese texto debería mostrarse solo con el `404`, y en los demás casos el mensaje de la API o "No se pudo cargar el caso". Se reportó como observación en la auditoría de la #107 (PR #118). No impide el flujo ni expone datos de otros usuarios, así que no se registra como defecto crítico.
 - **El `500` expone el mensaje interno de MySQL:** es la misma observación de HU-08 a HU-11 (`middlewares/errorHandler.js` devuelve `err.message`). No bloquea.
 - **Historial de un caso ajeno:** al cambiar a Carlos estando en el #5, el historial también se pide y responde `404`. La pantalla no muestra nada de ese historial.
 - En la consola del navegador solo aparecieron los `400`, `404` y `500` provocados por las pruebas, y el log de la API no registró errores.
 
 ### Conclusión
 
-HU-12 cumple E1 a E3, las reglas 1 a 4 y todas sus excepciones: el solicitante ve el detalle completo de sus casos, con atenciones e historial, no puede ver los casos de otros, y los datos sobreviven al reinicio. No se encontraron defectos críticos. Candidatos a casos propios en la #38: un solicitante no puede ver un caso ajeno escribiendo la URL (E2), y un caso devuelto muestra todas sus atenciones en orden.
+HU-12 cumple E1 a E3, las reglas 1 a 4 y todas sus excepciones: el solicitante ve el detalle completo de sus casos, con atenciones e historial, no puede ver los casos de otros, y los datos sobreviven al reinicio. No se encontraron defectos críticos; se registró un defecto de la interfaz que no es crítico (DEF-03, #123). Candidatos a casos propios en la #38: un solicitante no puede ver un caso ajeno escribiendo la URL (E2), y un caso devuelto muestra todas sus atenciones en orden.
