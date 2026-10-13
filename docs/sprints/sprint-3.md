@@ -74,7 +74,7 @@ Durante la demo no hubo errores en la consola del navegador ni en el log de la A
 
 DEF-02 (#93) se corrigió con el PR #110 y se cerró el 2026-10-13.
 
-**Conclusión:** el Sprint Goal se cumplió. Las cuatro historias (14 puntos) quedaron en Done el 2026-10-13, la fecha del plan del Planning, y el defecto que venía del Sprint 2 quedó cerrado. Con este incremento están todas las historias del backlog (HU-01 a HU-12).
+**Conclusión:** el Sprint Goal se cumplió. Las cuatro historias (14 puntos) quedaron en Done el 2026-10-13, la fecha del plan del Planning, y el defecto que venía del Sprint 2 quedó cerrado. Queda abierto un defecto de interfaz no crítico, DEF-03 (#123), para corregir antes de la entrega. Con este incremento están todas las historias del backlog (HU-01 a HU-12).
 
 Los resultados detallados de las pruebas (CP-10 y los escenarios de HU-09 a HU-12) están en [`docs/pruebas/casos_de_prueba.md`](../pruebas/casos_de_prueba.md).
 
