@@ -271,3 +271,14 @@ Las fichas están en `docs/historias/HU-09.md`, `HU-10.md`, `HU-11.md` y `HU-12.
 | Mismo endpoint y condiciones AND, parametrizadas | R1 y D-10: sin endpoint nuevo ni filtros en memoria (regla 2). |
 | Vacío/ausente no restringe; fuera de dominio → `400 Datos inválidos` | Reglas 1 y 4; igual que los filtros previos. |
 | `area_id` filtra `a.id` y `categoria_id` filtra `c.id`; cruce sin coincidencias → `[]` | R2 y excepción de la ficha: área/categoría inexistente o cruzada da lista vacía, no error. |
+
+## D-22 · GET indicadores HU-10 (Issue #100)
+
+`GET /api/indicadores` → `200` con totales y promedios calculados en SQL.
+
+| Decisión | Motivo |
+|---|---|
+| Servicio propio `indicadoresService.js` + ruta `/indicadores` | No toca `listarCasos`; son agregados globales (R3), no filtros. |
+| Grupos base en subconsultas `UNION ALL` con `LEFT JOIN` | Regla 2: los 5 estados, 2 tipos y 3 prioridades aparecen aunque estén en 0. |
+| Áreas desde la tabla `area` con `LEFT JOIN` | Las 5 quedan listadas; R4 (inactivas con casos incluidas) sale gratis. |
+| `AVG(TIMESTAMPDIFF(SECOND,…))/3600` con `ROUND(…,1)`; `NULL` si no hay casos | R1 (horas, días darían 0) y regla 4 (`AVG` vacío ya es `NULL`, se pasa tal cual). |
