@@ -17,8 +17,8 @@ Registro de la ejecución real de los casos de prueba del taller. Cada caso indi
 | CP-05 | Transición inválida | HU-05 | 2026-10-10 | ✅ Pasa |
 | CP-06 | Asignar agente | HU-04 | 2026-10-12 | ✅ Pasa |
 | CP-07 | Registrar diagnóstico y solución | HU-06 | 2026-10-12 | ✅ Pasa |
-| CP-08 | Devolver desde validación | HU-07 | — | ⏳ Pendiente (Sprint 2) |
-| CP-09 | Cerrar caso aprobado | HU-07 | — | ⏳ Pendiente (Sprint 2) |
+| CP-08 | Devolver desde validación | HU-07 | 2026-10-12 | ✅ Pasa |
+| CP-09 | Cerrar caso aprobado | HU-07 | 2026-10-12 | ✅ Pasa |
 | CP-10 | Filtrar por tipo, área y prioridad | HU-09 | — | ⏳ Pendiente (Sprint 3) |
 
 Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de aceptación:
@@ -716,3 +716,172 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 ### Conclusión
 
 HU-06 cumple CP-07, E2 a E5, todas sus excepciones y el *rollback*, y no se registraron defectos. Candidatos a casos propios en la #38: atención solo con diagnóstico (solución opcional) y consulta de atenciones de un caso ajeno por un solicitante.
+
+## HU-07 · Aprobar o devolver una solución (#77)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-12 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `0c1d67b` (incluye #75 y #76) |
+| Base de datos | MySQL 8.0 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos, 4 atenciones y 21 registros de historial al inicio). Para probar un validador inactivo se agregó el usuario de prueba **Validador Inactivo** (id 7, validador, `activo = 0`) solo en esta base. |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantalla `/por-validar`, usuario de prueba **Pedro Validador** (id 5). Para reenviar el caso a validación se usó **María Prieto** (id 4, agente) en `/bandeja-soporte` |
+
+En cada petición rechazada se revisaron el caso y su historial en MySQL, para comprobar que no cambió nada.
+
+### E5 · La pantalla Por validar muestra solo los casos En validación ✅
+
+**Pasos:** abrir `/por-validar` con Pedro Validador.
+
+**Esperado:** solo aparecen los casos `En validación`, con la solución registrada por el agente.
+
+**Obtenido:** aparece solo el caso `#4`, el único `En validación` de los seeds, con su categoría, el agente **María Prieto**, la prioridad y la solución "Se liberó cuota y se corrigió la regla; el correo ya recibe mensajes.". Los casos `Pendiente`, `En análisis`, `En atención` y `Cerrada` no aparecen. La solución también carga al abrir la URL directamente o al recargar con F5.
+
+**Evidencia:** [`hu07-e5-por-validar.jpg`](../evidencias/pruebas/hu07-e5-por-validar.jpg)
+
+### E3 · Motivo vacío o corto ✅
+
+**Pasos:** con Pedro, pulsar **Devolver** en el caso `#4`, escribir "Falla" (5 caracteres) y pulsar **Confirmar devolución**.
+
+**Esperado:** el sistema lo rechaza (`400`) y el caso no cambia.
+
+**Obtenido**
+- En la interfaz aparece "El motivo mínimo es de 10 caracteres." y no se envía ninguna petición.
+- Por API, `POST /api/casos/4/validacion` con `accion: "devolver"` responde `400` · "Datos inválidos" · "El motivo de devolución mínimo es de 10 caracteres." en tres casos: sin motivo, con "Falla" y con una sola letra rodeada de espacios.
+- En MySQL el caso 4 sigue `En validación` y con sus 4 filas de historial.
+
+**Evidencia:** [`hu07-e3-motivo-corto.jpg`](../evidencias/pruebas/hu07-e3-motivo-corto.jpg)
+
+### CP-08 · Devolver desde validación (E2) ✅
+
+**Pasos**
+1. Con Pedro, pulsar **Devolver** en el caso `#4` y escribir el motivo "El buzón sigue sin recibir correos externos; revisar la regla de reenvío.".
+2. Pulsar **Confirmar devolución**.
+3. Consultar el caso y su historial en MySQL, y abrir la **Bandeja** con María Prieto.
+
+**Esperado:** el caso vuelve a `En atención` con el mismo agente y el historial registra `devolucion` con el motivo.
+
+**Obtenido**
+- La lista se recarga y queda vacía.
+- En MySQL:
+
+  ```text
+  id  estado       agente_id  fecha_asignacion     fecha_cierre
+  4   En atención  4          2026-10-05 14:00:00  NULL
+
+  id  evento      estado_anterior  estado_nuevo  usuario_id  fecha                detalle
+  22  devolucion  En validación    En atención   5           2026-10-12 20:03:44  El buzón sigue sin recibir correos externos; revisar la regla de reenvío.
+  ```
+
+- El caso conserva el agente y la fecha de asignación. En la bandeja de María, el `#4` aparece `En atención` con **Registrar atención** y **Pasar a En validación**, y la línea de tiempo muestra "Devuelto" con el motivo.
+- El endpoint genérico no permite devolver: `PATCH /api/casos/3/estado` de `En validación` a `En atención`, hecho por el agente, responde `409` · "La devolución se hace por validación (HU-07)." (regla 5).
+
+**Evidencia:** [`cp08-motivo.jpg`](../evidencias/pruebas/cp08-motivo.jpg) (antes) · [`cp08-historial.jpg`](../evidencias/pruebas/cp08-historial.jpg) (después)
+
+### CP-09 · Cerrar caso aprobado (E1) ✅
+
+**Pasos**
+1. Con María, pulsar **Pasar a En validación** en el caso `#4` de la bandeja. La atención con solución de los seeds sigue vigente.
+2. Con Pedro, pulsar **Aprobar** en el caso `#4` de `/por-validar`.
+3. Consultar el caso y su historial en MySQL.
+
+**Esperado:** el caso queda `Cerrada` con `fecha_cierre` y el historial registra `cierre`.
+
+**Obtenido**
+- La lista muestra "No hay casos pendientes de validación".
+- En MySQL:
+
+  ```text
+  id  estado   agente_id  fecha_cierre
+  4   Cerrada  4          2026-10-12 20:04:31
+
+  id  evento            estado_anterior  estado_nuevo   usuario_id  fecha                detalle
+  23  envio_validacion  En atención      En validación  4           2026-10-12 20:04:07  NULL
+  24  cierre            En validación    Cerrada        5           2026-10-12 20:04:31  Validación aprobada; se cierra el caso.
+  ```
+
+- **Aprobar con motivo:** al aprobar el caso 3 por API con el motivo "Verificado en sitio con el docente del laboratorio.", el caso queda `Cerrada` y ese texto se guarda en el `detalle` del evento `cierre` (fila 31).
+- El endpoint genérico no permite llegar a `Cerrada`: `PATCH /api/casos/3/estado` a `Cerrada`, hecho por el agente, responde `409` · "Solo se llega a Cerrada por validación (HU-07)." (regla 5).
+
+**Evidencia:** [`cp09-lista-vacia.jpg`](../evidencias/pruebas/cp09-lista-vacia.jpg)
+
+### E4 · Caso que no está En validación ✅
+
+**Pasos:** con Pedro, `POST /api/casos/:id/validacion` sobre un caso en cada uno de los demás estados.
+
+**Esperado:** `409` y no cambia nada.
+
+**Obtenido**
+
+| Caso | Estado | Acción | Respuesta |
+|---|---|---|---|
+| 4 | Cerrada | aprobar y devolver | `409` · "Solo se validan casos En validación (está Cerrada)." |
+| 1 | Pendiente | aprobar | `409` · "… (está Pendiente)." |
+| 2 | En análisis | aprobar | `409` · "… (está En análisis)." |
+| 3 | En atención | aprobar | `409` · "… (está En atención)." |
+
+Después de estas peticiones y de las excepciones siguientes, el historial sigue con 24 filas.
+
+### Excepciones de HU-07
+
+Se ejecutaron con `POST /api/casos/:id/validacion`, salvo que se indique otro endpoint. En ninguna de las peticiones rechazadas cambió el caso ni el historial.
+
+| Situación | Pasos | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| El caso no existe | `id = 999` | `404` | `404` · "Caso no encontrado" · "No existe un caso con id 999." | ✅ |
+| `id` no es un entero positivo | `id = abc` y `id = 0` | `400` | `400` · "El id del caso debe ser un entero positivo." | ✅ |
+| `usuario_id` inválido | Sin `usuario_id` y con `"usuario_id": "x"` | `400` | `400` · "usuario_id debe ser un entero positivo." | ✅ |
+| El usuario no existe o está inactivo | `usuario_id` 99 y 7 (Validador Inactivo) | `400` | `400` · "El usuario indicado no existe o está inactivo." | ✅ |
+| El usuario no es validador | `usuario_id` 1 (solicitante), 3 (agente) y 6 (administradora) | `400` | `400` · "Solo un usuario con rol validador puede validar casos." | ✅ |
+| `accion` inválida | `"accion": "borrar"` y sin `accion` | `400` | `400` · "Acción inválida. Valores permitidos: aprobar, devolver." | ✅ |
+| Devolver sin motivo o con un motivo corto | Ver E3 | `400` | `400` | ✅ |
+| El caso no está `En validación` | Ver E4 | `409` | `409` | ✅ |
+| `estado=` inválido | `GET /api/casos?estado=Inventado` | `400` | `400` · "estado inválido. Valores permitidos: Pendiente, En análisis, En atención, En validación, Cerrada." Con `estado=Cerrada` y con `estado=En atención&prioridad=P1` responde `200` solo con las coincidencias. | ✅ |
+| Dos validaciones a la vez | Con el caso 1 `En validación`, dos peticiones en paralelo: una para aprobar y otra para devolver con motivo | Una `200` y otra `409`, con un solo evento | La devolución recibe `200` y la aprobación `409` · "… (está En atención)." El caso 1 queda `En atención`, sin `fecha_cierre` y con **una** sola fila `devolucion`. | ✅ |
+| Error de la base de datos | Con el caso 3 `En validación`, se creó un *trigger* temporal que hace fallar todo `INSERT` en `historial` y se pidió aprobar y devolver | `500` y *rollback* | `500` · "No se pudo validar el caso" en las dos. El caso 3 sigue `En validación`, sin `fecha_cierre`, y el historial sigue con 30 filas. Después se borró el *trigger*. | ✅ |
+
+### Usuario que no es validador en la pantalla ✅
+
+**Pasos:** abrir `/por-validar` con Diego Torres (agente) mientras el caso `#1` está `En validación`.
+
+**Obtenido:** aparece el aviso "Solo un usuario con rol validador puede aprobar o devolver (el backend lo exige).", y **Aprobar** y **Devolver** están desactivados. **Ver historial** sigue disponible.
+
+**Evidencia:** [`hu07-no-validador.jpg`](../evidencias/pruebas/hu07-no-validador.jpg)
+
+### Prueba de reinicio
+
+Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo (`/api/health` → `db: up`). En MySQL:
+- los casos 3 y 4 siguen `Cerrada`, con su `fecha_cierre` (2026-10-12 20:06:29 y 20:04:31);
+- el caso 1 sigue `En validación`;
+- el historial conserva 31 filas, con los eventos `devolucion` y `cierre` y su `detalle`.
+
+`GET /api/casos?estado=En validación` devuelve solo el caso 1. ✅
+
+### Defecto encontrado
+
+**DEF-02 (#93) · La lista de Por validar desaparece después de un error de validación** (P3)
+
+| Campo | Valor |
+|---|---|
+| Pasos | 1. Con Pedro, abrir `/por-validar` con los casos `#1` y `#3` `En validación`. 2. Cerrar el `#3` desde otra pestaña o por API. 3. Pulsar **Aprobar** en el `#3`. |
+| Esperado | Se muestra el `409` y el caso `#1` sigue en la lista. |
+| Obtenido | La pantalla solo muestra "Solo se validan casos En validación (está Cerrada).". El `#1` deja de verse hasta recargar con F5, aunque sigue `En validación`. |
+| Causa | `frontend/src/pages/PorValidar.tsx:121` guarda el error de la acción en `error`. El render (`:148-152`) usa ese mismo estado para reemplazar la lista cuando falla la carga. |
+| Impacto | Bajo: el backend rechaza la operación y no se pierde ni se corrompe ningún dato. Se reportó en la segunda revisión del PR #92, que se fusionó sin corregirlo. |
+| Estado | Abierto |
+
+**Evidencia:** [`hu07-def02-lista-oculta.jpg`](../evidencias/pruebas/hu07-def02-lista-oculta.jpg)
+
+### Observaciones
+
+- **El aviso del motivo corto se queda visible:** después de E3, "El motivo mínimo es de 10 caracteres." sigue en pantalla mientras se escribe un motivo válido, hasta pulsar **Confirmar devolución**. No impide el flujo.
+- **Aprobar no pide confirmación:** un clic cierra el caso, y un caso `Cerrada` ya no puede cambiar. Se sugiere pedir confirmación antes de aprobar.
+- **Por validar no aparece en el menú de los agentes:** Diego llega a la pantalla solo escribiendo la URL. Es correcto, porque la pantalla es del validador.
+- En la consola del navegador solo aparece el `409` esperado de DEF-02, y el log de la API no tiene errores.
+
+### Conclusión
+
+HU-07 cumple CP-08, CP-09, E3 a E5, la regla 5 y todas sus excepciones, incluidos la concurrencia y el *rollback*. Se registró un defecto de la interfaz que no es crítico (DEF-02, #93). Candidatos a casos propios en la #38: aprobar con motivo y dos validaciones simultáneas del mismo caso.
