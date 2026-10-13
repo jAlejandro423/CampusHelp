@@ -29,6 +29,7 @@ Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de a
 | HU-03 · Bandeja de casos pendientes | E1, E2, E3, E4, regla 4 y excepciones | #31 | 2026-10-10 | ✅ Pasa |
 | HU-08 · Historial y flujo completo del MVP | Flujo completo con devolución, E1, E2, E3, E4 y excepciones | #80 | 2026-10-12 | ✅ Pasa |
 | HU-10 · Indicadores | E1, E2, E3, R4 y excepciones | #102 | 2026-10-13 | ✅ Pasa |
+| HU-11 · Gestionar categorías | E1, E2, E3, E4, E5, reglas 2 a 5 y excepciones | #105 | 2026-10-13 | ✅ Pasa |
 
 ---
 
@@ -1241,3 +1242,136 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 ### Conclusión
 
 HU-10 cumple E1 a E3, las reglas 1 a 4 y la excepción del `500`: cada indicador coincide con una consulta SQL independiente, y los indicadores sobreviven al reinicio. No se encontraron defectos. Candidatos a casos propios en la #38: un caso nuevo sube los contadores (E2) y "Sin datos" sin casos cerrados (E3).
+
+---
+
+## HU-11 · Gestionar categorías (#105)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-13 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `834621b` (incluye #103 y #104) |
+| Base de datos | MySQL 8.0.39 limpia, con `db/schema.sql` y `db/seeds.sql` (16 categorías y 6 casos al inicio) |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantallas `/categorias` y `/crear-caso`, usuarios de prueba **Ana Admin** (id 6, administradora) y **Laura Gómez** (id 1, solicitante) |
+
+Primero se ejecutaron los escenarios por la API (un script de Python con `urllib`). Después se recargaron los seeds y se repitió el recorrido desde la interfaz.
+
+### E1 · Una categoría nueva aparece en el registro ✅
+
+**Pasos:** como Ana, en `/categorias`, crear "VPN" en Red y conectividad con la descripción "Acceso a la red privada virtual.". Después, como Laura, abrir `/crear-caso` y elegir Red y conectividad.
+
+**Esperado:** VPN aparece en la lista y Laura puede elegirla al registrar un caso.
+
+**Obtenido**
+
+| Vía | Resultado |
+|---|---|
+| API | `POST /api/categorias` → `201` (id 17). VPN aparece en `GET /api/categorias?area_id=3`, y `POST /api/casos` de Laura con VPN → `201` (caso #7) |
+| Pantalla | VPN aparece en Red y conectividad con el badge **Activa**, y el formulario se vacía. En `/crear-caso`, Laura ve Internet, Red cableada, **VPN** y Wi-Fi |
+
+**Evidencia:** [`hu11-e1-crear.jpg`](../evidencias/pruebas/hu11-e1-crear.jpg) y [`hu11-e1-registro.jpg`](../evidencias/pruebas/hu11-e1-registro.jpg) (en la captura el selector de categoría se desplegó como lista para que se vean las opciones)
+
+### E3 · Nombre duplicado en el área ✅
+
+**Pasos:** crear otra vez VPN en Red y conectividad, renombrar Wi-Fi a "Internet" y crear VPN en otra área.
+
+**Esperado:** `409` sin cambios en la BD. En otra área el nombre se acepta.
+
+**Obtenido**
+
+| Prueba | Resultado |
+|---|---|
+| Crear "VPN", "vpn" o "  VPN  " en el área 3 | `409` "Ya existe una categoría con ese nombre en el área." |
+| `PUT` de Wi-Fi a "Internet" | `409`. Wi-Fi sigue igual en la BD |
+| Crear "VPN" en Software | `201` (id 18): la unicidad es por área |
+| Pantalla: crear "vpn" | El aviso aparece encima de la lista, sin ocultarla. La BD sigue con 17 categorías |
+| Pantalla: editar Wi-Fi a "Internet" | El aviso aparece y el formulario de edición sigue abierto con los datos escritos. En la BD Wi-Fi no cambió |
+
+**Evidencia:** [`hu11-e3-duplicado.jpg`](../evidencias/pruebas/hu11-e3-duplicado.jpg) y [`hu11-e3-renombrar.jpg`](../evidencias/pruebas/hu11-e3-renombrar.jpg)
+
+### Editar conserva la descripción (regla 5) ✅
+
+Caso pedido en la auditoría de la #104.
+
+**Pasos:** como Ana, pulsar **Editar** en Wi-Fi, cambiar solo el nombre a "Wi-Fi campus" y guardar.
+
+**Esperado:** el formulario precarga el nombre y la descripción, y la descripción se conserva.
+
+**Obtenido:** el formulario precargó "Wi-Fi" y "Sin acceso al Wi-Fi institucional.". Al guardar, la lista muestra "Wi-Fi campus" con la misma descripción y el aviso del 409 anterior desaparece. En MySQL la fila 8 quedó con `nombre = 'Wi-Fi campus'` y la descripción original. Por la API, un `PUT` con `area_id: 1` responde `200` y el área sigue siendo la 3 (el área no se cambia).
+
+**Evidencia:** [`hu11-e2-desactivar.jpg`](../evidencias/pruebas/hu11-e2-desactivar.jpg) (fila "Wi-Fi campus")
+
+### E2 · Una categoría desactivada no aparece en el registro ✅
+
+**Pasos:** como Ana, pulsar **Desactivar** en VPN. Después, como Laura, abrir `/crear-caso` y elegir Red y conectividad. Enviar también un caso con VPN por la API.
+
+**Esperado:** VPN no aparece en el registro y la API responde `400`. Los casos existentes la conservan.
+
+**Obtenido**
+
+| Vía | Resultado |
+|---|---|
+| API | `PATCH` con `activa: false` → `200`. VPN sale de `GET /api/categorias?area_id=3` y sigue en `?todas=1` con `activa: false`. `POST /api/casos` con VPN → `400` "La categoría indicada está inactiva.". El caso #7 sigue con VPN (regla 4) |
+| Pantalla | VPN muestra el badge **Inactiva** y el botón **Activar**. En `/crear-caso`, Laura solo ve Internet, Red cableada y Wi-Fi campus. En MySQL, `activa = 0` |
+
+**Evidencia:** [`hu11-e2-desactivar.jpg`](../evidencias/pruebas/hu11-e2-desactivar.jpg) y [`hu11-e2-registro.jpg`](../evidencias/pruebas/hu11-e2-registro.jpg)
+
+### E4 · Reactivar la categoría ✅
+
+**Pasos:** como Ana, pulsar **Activar** en VPN y volver a `/crear-caso` como Laura.
+
+**Esperado:** VPN vuelve a aparecer en el registro.
+
+**Obtenido:** por la API, `PATCH` con `activa: true` → `200` y VPN vuelve a `?area_id=3`. En la pantalla VPN recupera el badge **Activa**, y Laura vuelve a ver Internet, Red cableada, **VPN** y Wi-Fi campus.
+
+### E5 · Un usuario que no es administrador ✅
+
+**Pasos:** intentar crear, editar y desactivar con usuarios que no son administradores, y abrir `/categorias` como Laura.
+
+**Esperado:** `400` y sin cambios.
+
+**Obtenido**
+
+| Prueba | Resultado |
+|---|---|
+| Laura (solicitante), Diego (agente) y Pedro (validador) en `POST`, `PUT` y `PATCH` | `400` "Solo un usuario administrador activo gestiona categorías.". VPN no cambió |
+| Sin `usuario_id`, con `"abc"` o con 999 | `400` |
+| Ana inactiva temporalmente (`activa = 0`) | `400`. Después se reactivó |
+| Pantalla como Laura | Aviso "Solo un administrador activo gestiona categorías (el backend lo exige)." y los 35 botones (Crear, Editar, Desactivar) deshabilitados |
+
+**Evidencia:** [`hu11-e5-no-admin.jpg`](../evidencias/pruebas/hu11-e5-no-admin.jpg)
+
+### Excepciones de HU-11
+
+| Situación | Petición | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| Nombre inválido | "ab", 101 caracteres, "   " o sin nombre | `400` | `400` | ✅ |
+| Nombre en el límite | 100 caracteres | `201` | `201` (id 19) | ✅ |
+| Espacios sobrantes | "  Escáner  " | Se recorta | `201` (id 20), guardado como "Escáner". La descripción también se recorta | ✅ |
+| Área inválida | Área 99, "abc" o área 5 inactiva | `400` | `400` | ✅ |
+| Descripción larga | 256 caracteres | `400` | `400` | ✅ |
+| Varios errores | Nombre corto y área inexistente | `400` con los dos | `400` con los dos mensajes en `detalles` | ✅ |
+| `activa` no booleano | `"false"`, `0` o sin `activa` | `400` | `400` | ✅ |
+| Categoría inexistente | `PUT` y `PATCH` sobre el id 999 | `404` | `404` | ✅ |
+| Id inválido | `PUT` sobre `abc` | `400` | `400` | ✅ |
+| Editar con nombre corto | `PUT` con "ab" | `400` | `400` | ✅ |
+| Editar con su propio nombre | `PUT` de VPN con "VPN" | `200` | `200`: no cuenta como duplicado | ✅ |
+| Error de la base de datos | Se renombró la tabla temporalmente (`RENAME TABLE categoria TO categoria_x`) y se pidieron `GET` y `POST` | `500` | `500` · `{"error":"Table 'campushelp.categoria' doesn't exist","detalles":[]}`. Después se restauró la tabla | ✅ (ver observaciones) |
+
+### Prueba de reinicio
+
+Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo. `GET /api/categorias?todas=1` devuelve 17 categorías, y en Red y conectividad siguen VPN (activa) y "Wi-Fi campus" con su descripción original. ✅
+
+### Observaciones
+
+- **Un `PUT` sin `descripcion` la deja en `NULL`:** es la semántica de reemplazo de `PUT`. La pantalla siempre envía la descripción precargada, así que desde la interfaz no se pierde (ver "Editar conserva la descripción"). Un cliente de la API debe enviar la descripción completa. No se registra como defecto.
+- **El `500` expone el mensaje interno de MySQL:** es la misma observación de HU-08, HU-09 y HU-10 (`middlewares/errorHandler.js` devuelve `err.message`). No bloquea.
+- En la consola del navegador solo aparecieron los dos `409` esperados del E3, y el log de la API no registró errores.
+
+### Conclusión
+
+HU-11 cumple E1 a E5, las reglas 1 a 5 y todas sus excepciones: las categorías creadas, editadas, desactivadas y reactivadas se reflejan en el formulario de registro, y los cambios sobreviven al reinicio. No se encontraron defectos. Candidatos a casos propios en la #38: editar solo el nombre conserva la descripción, y una categoría desactivada desaparece del registro pero los casos existentes la conservan.
