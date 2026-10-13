@@ -291,8 +291,7 @@ export interface HistorialEvento {
   detalle: string | null;
 }
 
-export function obtenerHistorial(
-  casoId: number,
+export function obtenerHistorial(  casoId: number,
   usuarioId: number
 ): Promise<HistorialEvento[]> {
   const params = new URLSearchParams();
@@ -391,4 +390,24 @@ export async function validarCaso(
   }
 
   return response.json() as Promise<CasoCreado>;
+}
+
+// HU-10 · Todo calculado en SQL sobre datos reales (regla 1). Promedios en
+// horas con un decimal; null sin datos (regla 4 → "Sin datos").
+export interface Indicadores {
+  total: number;
+  por_estado: { estado: string; total: number }[];
+  por_tipo: { tipo: string; total: number }[];
+  por_prioridad: { prioridad: string; total: number }[];
+  por_area: { area_id: number; area: string; total: number }[];
+  tiempos: {
+    promedio_horas_asignacion: number | null;
+    casos_asignados: number;
+    promedio_horas_cierre: number | null;
+    casos_cerrados: number;
+  };
+}
+
+export function obtenerIndicadores(): Promise<Indicadores> {
+  return getJson<Indicadores>("/api/indicadores");
 }
