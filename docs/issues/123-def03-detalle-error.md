@@ -14,8 +14,13 @@ podía distinguir el 404 de un 500 o un fallo de red.
 - `src/api/client.ts`: `ApiError` movido arriba, helper `leerError` común y
   `getJson` que lanza `ApiError { status, detalles }` con el cuerpo del
   backend. Sin cambios para los demás listados (muestran sus mensajes).
-- `src/pages/DetalleMiCaso.tsx`: 404 → "Caso no encontrado"; otro `ApiError`
-  → su mensaje; otro fallo → "No se pudo cargar el caso. Intenta de nuevo.".
+- `src/pages/DetalleMiCaso.tsx`: 404 → "Caso no encontrado"; otro `4xx`
+  → su mensaje; `5xx` o fallo de red → "No se pudo cargar el caso. Intenta
+  de nuevo." (el `5xx` trae el mensaje interno de MySQL). Un id no numérico
+  (`/mis-solicitudes/abc`) muestra "Caso no encontrado" sin llamar a la API.
+- Se retiró de este PR la redirección al cambiar de rol (`MainLayout.tsx`):
+  estaba fuera del alcance y sacaba del detalle a administrador, agente y
+  validador, que pueden ver cualquier caso (regla 2 de HU-12).
 
 ## Verificación
 

@@ -29,17 +29,25 @@ function DetalleMiCaso() {
         setError("No hay usuario activo para ver el detalle.");
         return;
       }
+      // Un id no numérico (/mis-solicitudes/abc) no puede ser un caso.
+      if (!/^[1-9]\d*$/.test(id ?? "")) {
+        setCargando(false);
+        setError("Caso no encontrado");
+        setCaso(null);
+        return;
+      }
       try {
         setCargando(true);
         setError("");
         setCaso(await obtenerDetalle(Number(id), usuario.id));
       } catch (err) {
         console.error(`Error cargando detalle del caso ${id}:`, err);
-        // DEF-03: "Caso no encontrado" solo ante 404; otros errores muestran
-        // su mensaje para no hacer creer que el caso no existe.
+        // DEF-03: "Caso no encontrado" solo ante 404; un 4xx muestra el
+        // mensaje de la API, y un 5xx o un fallo de red, un texto genérico
+        // (el 5xx trae el mensaje interno de la base de datos).
         if (err instanceof ApiError && err.status === 404) {
           setError("Caso no encontrado");
-        } else if (err instanceof ApiError) {
+        } else if (err instanceof ApiError && err.status < 500) {
           setError(err.message);
         } else {
           setError("No se pudo cargar el caso. Intenta de nuevo.");
