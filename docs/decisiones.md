@@ -282,3 +282,14 @@ Las fichas están en `docs/historias/HU-09.md`, `HU-10.md`, `HU-11.md` y `HU-12.
 | Grupos base en subconsultas `UNION ALL` con `LEFT JOIN` | Regla 2: los 5 estados, 2 tipos y 3 prioridades aparecen aunque estén en 0. |
 | Áreas desde la tabla `area` con `LEFT JOIN` | Las 5 quedan listadas; R4 (inactivas con casos incluidas) sale gratis. |
 | `AVG(TIMESTAMPDIFF(SECOND,…))/3600` con `ROUND(…,1)`; `NULL` si no hay casos | R1 (horas, días darían 0) y regla 4 (`AVG` vacío ya es `NULL`, se pasa tal cual). |
+
+## D-23 · POST/PUT/PATCH categorías HU-11 (Issue #103)
+
+Gestión solo para administrador activo, sin borrado físico.
+
+| Decisión | Motivo |
+|---|---|
+| `usuario_id` en el cuerpo, rol `administrador` activo o `400` | R1: igual que HU-04/06/07 con auth simulada. |
+| Nombre 3–100 con `trim`, descripción opcional ≤ 255; `activa` booleano estricto | Regla 2 y excepción de la ficha; `PUT` no cambia el área (R2). |
+| Duplicado `(area_id, nombre)` → `409`, con chequeo previo + `catch ER_DUP_ENTRY` | Regla 3 a prueba de carreras; sin historial (R4). |
+| `GET ?todas=1` incluye inactivas con `area` y `activa`; otro valor se ignora | R3; el registro sigue con solo activas (E2/E4). La fila ahora siempre trae `area` y `activa` (aditivo para el FRONT). |
