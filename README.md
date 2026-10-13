@@ -194,6 +194,7 @@ docs/      Políticas, convenciones, decisiones, historias, pruebas, métricas, 
 - [Políticas: Product Goal, DoR, DoD y tablero](docs/politicas.md)
 - [Convenciones de ramas, commits y PR](docs/convenciones.md)
 - [Decisiones técnicas](docs/decisiones.md)
+- [Documento de requisitos](docs/requisitos.md)
 - [Historias de usuario](docs/historias/)
 - [Trazabilidad](docs/trazabilidad.md)
 - [Casos de prueba y registro de defectos](docs/pruebas/casos_de_prueba.md)
