@@ -2,6 +2,8 @@
 
 La hoja de seguimiento es [`seguimiento.xlsx`](seguimiento.xlsx). Se abre con Excel, LibreOffice o Google Sheets (*Archivo → Importar*). La pestaña **Léeme** explica cómo llenarla.
 
+La comparación de los tres sprints, con tablas, gráficas y el efecto de cada mejora de la retro, está en [`consolidado.md`](consolidado.md) (#41).
+
 | Pestaña | Se llena | Para qué |
 |---|---|---|
 | Historias | Fecha y hora en que cada HU entra a Ready, En análisis, En atención, En validación y Done | Lead Time y Cycle Time por HU |
