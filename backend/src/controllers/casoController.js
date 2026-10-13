@@ -6,6 +6,7 @@ const { cambiarEstado, asignarCaso } = require('../services/estados');
 const { obtenerHistorial } = require('../services/historialService');
 const { registrarAtencion, listarAtenciones } = require('../services/atencionService');
 const { validarCaso } = require('../services/validacionService');
+const { obtenerDetalle } = require('../services/detalleService');
 
 async function crear(req, res, next) {
   try {
@@ -79,4 +80,12 @@ async function validarPorId(req, res, next) {
   }
 }
 
-module.exports = { crear, listar, cambiarEstadoPorId, asignarPorId, historialPorId, crearAtencion, listarAtencionesPorId, validarPorId };
+async function detallePorId(req, res, next) {
+  try {
+    res.status(200).json(await obtenerDetalle(req.params.id, req.query.usuario_id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { crear, listar, cambiarEstadoPorId, asignarPorId, historialPorId, crearAtencion, listarAtencionesPorId, validarPorId, detallePorId };
