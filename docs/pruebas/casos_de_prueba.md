@@ -4,7 +4,7 @@ Registro de la ejecución real de los casos de prueba del taller. Cada caso indi
 
 - **Estados:** ✅ Pasa · ❌ Falla (se abre un defecto con label `defecto`) · ⏳ Pendiente.
 - **Evidencias:** capturas en `docs/evidencias/pruebas/`.
-- Los casos propios (CP-11 en adelante) y el registro consolidado de defectos se completan en la #38.
+- Los casos propios (CP-11 a CP-18) y el registro consolidado de defectos están al final del documento (#38).
 
 ## Resumen
 
@@ -20,6 +20,14 @@ Registro de la ejecución real de los casos de prueba del taller. Cada caso indi
 | CP-08 | Devolver desde validación | HU-07 | 2026-10-12 | ✅ Pasa |
 | CP-09 | Cerrar caso aprobado | HU-07 | 2026-10-12 | ✅ Pasa |
 | CP-10 | Filtrar por tipo, área y prioridad | HU-09 | 2026-10-13 | ✅ Pasa |
+| CP-11 | Categoría de otra área | HU-01 | 2026-10-13 | ✅ Pasa |
+| CP-12 | Un agente no asignado registra una atención | HU-06 | 2026-10-13 | ✅ Pasa |
+| CP-13 | Devolución sin motivo | HU-07 | 2026-10-13 | ✅ Pasa |
+| CP-14 | Un caso cerrado no cambia | HU-05 | 2026-10-13 | ✅ Pasa |
+| CP-15 | Una categoría desactivada no aparece en el registro | HU-11 | 2026-10-13 | ✅ Pasa |
+| CP-16 | Un solicitante no ve un caso ajeno por URL | HU-12 | 2026-10-13 | ✅ Pasa |
+| CP-17 | Dos validaciones simultáneas del mismo caso | HU-07 | 2026-10-13 | ✅ Pasa |
+| CP-18 | Un caso devuelto muestra todas sus atenciones en orden | HU-12 | 2026-10-13 | ✅ Pasa |
 
 Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de aceptación:
 
@@ -1485,3 +1493,187 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 ### Conclusión
 
 HU-12 cumple E1 a E3, las reglas 1 a 4 y todas sus excepciones: el solicitante ve el detalle completo de sus casos, con atenciones e historial, no puede ver los casos de otros, y los datos sobreviven al reinicio. No se encontraron defectos críticos; se registró un defecto de la interfaz que no es crítico (DEF-03, #123), que se corrigió con el PR #125. Candidatos a casos propios en la #38: un solicitante no puede ver un caso ajeno escribiendo la URL (E2), y un caso devuelto muestra todas sus atenciones en orden.
+
+---
+
+## Casos propios (#38)
+
+Casos de prueba adicionales a los diez obligatorios. Cada uno está vinculado a un criterio de aceptación o a una regla de negocio, y cubre algo que los CP obligatorios no prueban: una barrera del backend, un caso límite o la concurrencia.
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-13, de 11:45 a 11:50 (hora local) |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `fa06599` (incluye todas las HU y las correcciones de DEF-01, DEF-02 y DEF-03) |
+| Base de datos | MySQL 8.0 limpia, con `db/schema.sql` y `db/seeds.sql` cargados (6 casos, 21 registros de historial y 4 atenciones al inicio) |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, con Laura Gómez (id 1, solicitante) y Ana Admin (id 6, administradora) |
+
+Las peticiones a la API se hicieron con un script de Node (`fetch`) que cuenta las filas de `caso`, `historial` y `atencion` antes y después de cada caso.
+
+| CP | Caso | Criterio que verifica |
+|---|---|---|
+| CP-11 | Categoría de otra área | HU-01 · E4: la categoría debe pertenecer al área |
+| CP-12 | Un agente no asignado registra una atención | HU-06 · E2: solo el agente asignado registra la atención |
+| CP-13 | Devolución sin motivo | HU-07 · E3: la devolución exige un motivo de al menos 10 caracteres |
+| CP-14 | Un caso cerrado no cambia | HU-05: un caso `Cerrada` no puede cambiar (también por asignación, atención o validación) |
+| CP-15 | Una categoría desactivada no aparece en el registro | HU-11 · E2: una categoría inactiva no se ofrece ni se acepta al registrar |
+| CP-16 | Un solicitante no ve un caso ajeno por URL | HU-12 · E2 y HU-08 · E3: el solicitante solo ve sus casos |
+| CP-17 | Dos validaciones simultáneas del mismo caso | HU-07 · E4: solo se valida un caso `En validación` (bloqueo `FOR UPDATE`) |
+| CP-18 | Un caso devuelto muestra todas sus atenciones en orden | HU-12 · E1, HU-07 · E2 y HU-08 · E2: el detalle conserva cada atención y la devolución con su motivo |
+
+### CP-11 · Categoría de otra área (HU-01 · E4) ✅
+
+**Pasos:** `POST /api/casos` con Laura y datos válidos, salvo una categoría que no pertenece al área, en tres combinaciones: Hardware + Wi-Fi (`area_id: 1`, `categoria_id: 8`), Red y conectividad + Computador (3, 1) y Plataformas académicas + Contraseña (5, 11). En la interfaz, elegir un área en `/crear-caso` y revisar las categorías que ofrece.
+
+**Esperado:** se rechaza con `400` y no se crea ninguna fila. La interfaz solo ofrece las categorías del área elegida.
+
+**Obtenido**
+- Las tres combinaciones responden:
+
+  ```json
+  HTTP 400
+  { "error": "Datos inválidos", "detalles": ["La categoría no pertenece al área indicada."] }
+  ```
+
+- Antes y después: 6 casos, 21 registros de historial y 4 atenciones.
+- En `/crear-caso`, con el área Hardware la lista de categorías es solo Computador, Impresora, Periférico y Proyector, así que desde la interfaz no se puede elegir una categoría de otra área.
+
+### CP-12 · Un agente no asignado registra una atención (HU-06 · E2) ✅
+
+**Pasos:** el caso #3 está `En atención` y asignado a Diego Torres (id 3). Enviar `POST /api/casos/3/atenciones` con diagnóstico y solución válidos, primero como María Prieto (id 4, agente no asignada) y después como Laura Gómez (id 1, solicitante).
+
+**Esperado:** se rechaza y no se guarda la atención.
+
+**Obtenido**
+- María: `409` · `"Solo el agente asignado registra la atención."`.
+- Laura: `400` · `detalles: ["El usuario debe existir, estar activo y tener rol agente."]`.
+- El caso #3 sigue `En atención` con `agente_id = 3`. Antes y después: 4 atenciones y 21 registros de historial.
+
+### CP-13 · Devolución sin motivo (HU-07 · E3) ✅
+
+**Pasos:** el caso #4 está `En validación`. Enviar `POST /api/casos/4/validacion` como Pedro Validador (id 5), con `accion: "devolver"`, en cuatro variantes: sin `motivo`, con `""`, con nueve espacios y con `Incomplet` (9 caracteres).
+
+**Esperado:** se rechaza con `400` y el caso no cambia.
+
+**Obtenido**
+- Las cuatro variantes responden `400` · `detalles: ["El motivo de devolución mínimo es de 10 caracteres."]`.
+- El caso #4 sigue `En validación`, sin `fecha_cierre`, y el historial sigue con 21 registros.
+
+### CP-14 · Un caso cerrado no cambia (HU-05) ✅
+
+**Pasos:** el caso #5 está `Cerrada`. Intentar cambiarlo por cada endpoint que escribe en un caso:
+1. `PATCH /api/casos/5/estado` a `En atención`, a `Pendiente` y a `Cerrada` (Diego, id 3).
+2. `PATCH /api/casos/5/asignar` (María, id 4).
+3. `POST /api/casos/5/atenciones` (Diego, el agente del caso).
+4. `POST /api/casos/5/validacion` con `aprobar` y con `devolver` y un motivo válido (Pedro, id 5).
+
+**Esperado:** todas se rechazan y el caso, su `fecha_cierre` y el historial quedan iguales.
+
+**Obtenido**
+
+| Petición | Respuesta |
+|---|---|
+| Estado → `En atención`, `Pendiente` o `Cerrada` | `409` · "El caso está Cerrado y no puede cambiar." |
+| Asignar | `409` · "El caso ya tiene un agente asignado." |
+| Atención | `409` · "Solo se registra atención en un caso En atención." |
+| Aprobar o devolver | `409` · "Solo se validan casos En validación (está Cerrada)." |
+
+- La fila del caso #5 es idéntica antes y después (`Cerrada`, `agente_id = 3`, `fecha_cierre = 2026-10-06 16:00:00`). Antes y después: 21 registros de historial y 4 atenciones.
+
+### CP-15 · Una categoría desactivada no aparece en el registro (HU-11 · E2) ✅
+
+**Pasos**
+1. Como Ana Admin, desactivar Wi-Fi: `PATCH /api/categorias/8` con `activa: false`.
+2. Revisar `GET /api/categorias?area_id=3`, la pantalla **Categorías** y las opciones de `/crear-caso` con el área Red y conectividad.
+3. Intentar `POST /api/casos` con `categoria_id: 8`.
+4. Reactivar Wi-Fi desde la pantalla **Categorías** (botón **Activar**).
+
+**Esperado:** la categoría inactiva no se ofrece ni se acepta. Los casos que ya la usan la conservan.
+
+**Obtenido**
+- `PATCH` → `200` con `activa: false`. La pantalla **Categorías** muestra Wi-Fi con la etiqueta **Inactiva** y el botón **Activar**.
+- `GET /api/categorias?area_id=3` devuelve solo Internet y Red cableada, y `/crear-caso` ofrece solo esas dos.
+- `POST` → `400` · `detalles: ["La categoría indicada está inactiva."]`. No se crean filas.
+- El caso #1, que ya era de Wi-Fi, conserva `categoria_id = 8`.
+- Al pulsar **Activar**, MySQL vuelve a `activa = 1` y la API vuelve a listar Wi-Fi.
+
+**Evidencia:** [`cp15-categoria-inactiva.jpg`](../evidencias/pruebas/cp15-categoria-inactiva.jpg)
+
+### CP-16 · Un solicitante no ve un caso ajeno por URL (HU-12 · E2 y HU-08 · E3) ✅
+
+**Pasos:** el caso #6 es de Carlos Ruiz (id 2). Como Laura (id 1):
+1. Pedir `GET /api/casos/6`, `/api/casos/6/historial` y `/api/casos/6/atenciones` con `usuario_id=1`.
+2. Escribir en el navegador `/mis-solicitudes/6`.
+3. Revisar `GET /api/casos?usuario_id=1`.
+
+**Esperado:** `404` en las tres peticiones, la pantalla no muestra datos del caso y la lista de Laura no lo incluye.
+
+**Obtenido**
+- Las tres peticiones responden `404` · `"Caso no encontrado"`. Con `usuario_id=2` (Carlos) el detalle responde `200`.
+- La pantalla muestra "Detalle del caso #6" y **"Caso no encontrado"**, sin ningún dato del caso.
+- **Mis casos** de Laura devuelve los casos 1, 3 y 5.
+- En la consola del navegador solo aparecen el `404` y el registro del error que deja la pantalla de detalle.
+
+**Evidencia:** [`cp16-caso-ajeno.jpg`](../evidencias/pruebas/cp16-caso-ajeno.jpg)
+
+### CP-17 · Dos validaciones simultáneas del mismo caso (HU-07 · E4) ✅
+
+**Pasos:** con el caso #4 `En validación`, enviar a la vez (`Promise.all`) dos peticiones de Pedro: `aprobar` y `devolver` con un motivo válido.
+
+**Esperado:** solo una tiene efecto. La otra recibe `409`, y en el historial queda un único evento.
+
+**Obtenido**
+- `aprobar` → `200` y el caso queda `Cerrada` con `fecha_cierre = 2026-10-13 11:46:25`.
+- `devolver` → `409` · "Solo se validan casos En validación (está Cerrada)."
+- El historial pasa de 21 a 22 registros: un solo evento `cierre` (`En validación → Cerrada`) y ninguna `devolucion`.
+
+### CP-18 · Un caso devuelto muestra todas sus atenciones en orden (HU-12 · E1, HU-07 · E2 y HU-08 · E2) ✅
+
+**Pasos**
+1. Laura registra el caso #7 (Incidente, Software / Error, P2).
+2. Diego se lo asigna, lo pasa a `En atención`, registra la atención 1 y lo envía a validación.
+3. Pedro lo devuelve con el motivo `El error sigue apareciendo desde otro navegador.`.
+4. Diego registra la atención 2 y lo envía de nuevo a validación.
+5. Pedro lo aprueba con el motivo opcional `Verificado con el usuario desde dos navegadores.`.
+6. Laura abre `/mis-solicitudes/7`.
+
+**Esperado:** el detalle muestra las dos atenciones en orden, la devolución con su motivo y el cierre. La aprobación guarda su motivo y la `fecha_cierre`.
+
+**Obtenido**
+- Cada paso respondió `200` o `201`. El caso #7 queda `Cerrada`, con `fecha_cierre = 2026-10-13 11:47:35`.
+- `GET /api/casos/7?usuario_id=1` devuelve las atenciones 5 (11:47:29) y 6 (11:47:32), en ese orden y las dos de Diego Torres.
+- El historial tiene 9 eventos en orden: `creacion`, `asignacion`, `cambio_estado`, `atencion`, `envio_validacion`, `devolucion` (con el motivo), `atencion`, `envio_validacion` y `cierre`, con el motivo de la aprobación en `detalle`.
+- La pantalla muestra **Atenciones (2)** en el mismo orden y el historial completo, con "Devuelto: El error sigue apareciendo desde otro navegador." y "Verificado con el usuario desde dos navegadores." en el cierre.
+
+**Evidencia:** [`cp18-atenciones-devolucion.jpg`](../evidencias/pruebas/cp18-atenciones-devolucion.jpg)
+
+### Prueba de reinicio
+
+Se detuvieron la API y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo (`Uptime` = 5 s, `/api/health` con `db: up`). MySQL conserva 7 casos, 31 registros de historial y 6 atenciones. Los casos #4 y #7 siguen `Cerrada` con su `fecha_cierre`, el #5 sigue igual y Wi-Fi sigue activa. La API devuelve el #7 con sus dos atenciones. ✅
+
+### Observaciones
+
+- **CP-14:** la asignación de un caso cerrado se rechaza con "El caso ya tiene un agente asignado." porque esa comprobación va antes que la del estado. El caso no cambia, así que no es un defecto. Un caso `Cerrada` sin agente no puede existir, porque para cerrar hace falta una atención del agente asignado.
+- **CP-12:** el solicitante recibe `400` y no `409` porque se valida el rol antes de mirar el caso. Es coherente con las demás rutas.
+- El log de la API no registró errores durante la ejecución.
+
+### Conclusión
+
+Los ocho casos propios (CP-11 a CP-18) pasan. Las reglas que protegen el flujo están en el backend: la categoría debe pertenecer al área y estar activa, solo el agente asignado atiende, la devolución exige motivo, un caso cerrado no cambia por ningún endpoint y dos validaciones simultáneas no se pisan. No se encontraron defectos nuevos.
+
+---
+
+## Registro consolidado de defectos (#38)
+
+Todos los defectos tienen una issue con la label `defecto`. Los mismos datos están en la pestaña **Defectos** de [`docs/metricas/seguimiento.xlsx`](../metricas/seguimiento.xlsx), con las fechas de detección y cierre.
+
+| ID | Issue | Sprint | HU | Descripción | Pasos | Resultado esperado | Resultado obtenido | Prioridad | Estado | Corrección |
+|---|---|---|---|---|---|---|---|---|---|---|
+| DEF-01 | #56 | 1 | HU-02, HU-03 y HU-05 | Tildes corruptas al cargar `schema.sql` y `seeds.sql` en Windows: falta `SET NAMES utf8mb4` y el `ENUM` de `caso.estado` queda mal guardado. | 1. Cargar los scripts con el cliente `mysql` de Windows, sin `--default-character-set`. 2. `SELECT @@character_set_client` (cp850). 3. Consultar el usuario 1 y `SHOW COLUMNS` de `caso.estado`. | "Laura Gómez" y los valores del `ENUM` con tildes correctas. | Nombres corruptos ("Laura G├│mez") y `ENUM` corrupto: el cambio a `En análisis` fallaría (rompe CP-04). | P1 | Cerrado (2026-10-09) | PR #59 |
+| DEF-02 | #93 | 2 | HU-07 | Después de un error de validación (`400` o `409`), la pantalla **Por validar** reemplaza toda la lista por el mensaje y oculta los demás casos hasta recargar. | 1. Con Pedro abrir `/por-validar` con dos casos `En validación`. 2. Cerrar uno por API o desde otra pestaña. 3. Pulsar **Aprobar** en ese caso. | Se muestra el mensaje del `409` y el otro caso sigue en la lista. | Solo se ve "Solo se validan casos En validación (está Cerrada).", y el otro caso deja de verse aunque sigue `En validación`. | P3 | Cerrado (2026-10-13) | PR #110 |
+| DEF-03 | #123 | 3 | HU-12 | El detalle del caso muestra "Caso no encontrado" ante cualquier error (`500` o fallo de red), no solo ante el `404`. | 1. `RENAME TABLE atencion TO atencion_x`. 2. Con Laura abrir `/mis-solicitudes/5`. 3. Restaurar la tabla. | "Caso no encontrado" solo con el `404`. En los demás casos, el mensaje de la API o "No se pudo cargar el caso". | La API responde `500` y la pantalla muestra "Caso no encontrado". | P3 | Cerrado (2026-10-13) | PR #125 |
+
+**Resumen:** 3 defectos registrados (uno P1 y dos P3), uno por sprint, y ninguno abierto, así que se cumple el punto de la DoD "sin defectos críticos abiertos". Los casos propios CP-11 a CP-18 no encontraron defectos nuevos.
