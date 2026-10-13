@@ -26,7 +26,7 @@
 | WIP promedio (análisis · atención · validación) | — · — · — | No hubo dailies registradas. |
 | Dailies con WIP excedido | — | No hubo dailies registradas. |
 | Bloqueos (cantidad · días) | 0 · 0 | Ninguna issue tuvo la label `bloqueado`. |
-| Defectos encontrados · abiertos | 1 · 1 | DEF-03 (#123, P3): el detalle del caso muestra "Caso no encontrado" ante un `500`. Se señaló como observación en la auditoría de la #107 y en la QA de la #108, y se registró como defecto al cerrar el sprint (ver [`casos_de_prueba.md`](../pruebas/casos_de_prueba.md)). No es crítico. DEF-02 (#93) se corrigió con el PR #110 y se cerró el 2026-10-13, así que el Sprint 2 también queda con 0 defectos abiertos. |
+| Defectos encontrados · abiertos | 1 · 0 | DEF-03 (#123, P3): el detalle del caso muestra "Caso no encontrado" ante un `500`. Se señaló como observación en la auditoría de la #107 y en la QA de la #108, y se registró como defecto al cerrar el sprint (ver [`casos_de_prueba.md`](../pruebas/casos_de_prueba.md)). No es crítico. Se corrigió con el PR #125 y se cerró el 2026-10-13. DEF-02 (#93) se corrigió con el PR #110 y se cerró el 2026-10-13, así que el Sprint 2 también queda con 0 defectos abiertos. |
 | Devoluciones desde validación | 0 | |
 
 Las fechas de cada columna no se anotaron durante el sprint: se tomaron de git y GitHub (ver la observación de la pestaña **Historias**). Los cuatro commits BACK (#97, #100, #103 y #106) se hicieron entre las 03:10 y las 03:39 (hora local) del 13 oct, así que el trabajo pudo empezar antes y el Cycle Time real puede ser algo mayor.
@@ -39,7 +39,7 @@ Las fechas de cada columna no se anotaron durante el sprint: se tomaron de git y
 | Días de retraso sobre el plan | 3 | 1 | 0 (1 sobre el cronograma original) |
 | Cycle Time promedio (días) | 1,7 | 1,27 | 0,26 |
 | Lead Time promedio (días) | — | 1,89 | 0,47 |
-| Defectos encontrados · abiertos | 1 · 0 | 1 · 0 (DEF-02 cerrado en el Sprint 3) | 1 · 1 (DEF-03, P3) |
+| Defectos encontrados · abiertos | 1 · 0 | 1 · 0 (DEF-02 cerrado en el Sprint 3) | 1 · 0 (DEF-03 cerrado con el PR #125) |
 | PR con la espera más larga | #63: unas 17 h | #82: unas 9,5 h | #110: unas 8,3 h (abierto de noche, 04:04 → 12:23 UTC) |
 
 El sprint duró una noche y una mañana, así que los tiempos son mucho más cortos que en los anteriores y no se comparan en igualdad de condiciones.
@@ -76,7 +76,7 @@ El sprint duró una noche y una mañana, así que los tiempos son mucho más cor
 | 2026-10-13 | Los PR #119, #120, #121 y #122 (QA de HU-09 a HU-12) se fusionaron en 3 a 4 minutos, sin review ni comentarios. | No queda evidencia de que alguien revisara la QA. | La prisa por llegar a la entrega. Se repite el incidente de los #89 y #91 del Sprint 2. |
 | 2026-10-13 | El comentario de auditoría del PR #118 se publicó a las 13:40 UTC, después del merge (13:37 UTC). | La revisión existe, pero no precede al merge. | Se fusionó antes de terminar de publicar el veredicto. |
 | 2026-10-13 | Los títulos de los PR #117 ("Feat/104 gestion categorias") y #118 ("Feat/107 detalle caso") no siguen Conventional Commits, y los commits de los #111 a #118 usan el alcance `casos`. | Trazabilidad por título y alcance menor, aunque todos llevan `Closes #N`. | GitHub propone el nombre de la rama como título. Las auditorías lo señalaron como observación no bloqueante. |
-| 2026-10-13 | El PR #118 se fusionó con la observación de `DetalleMiCaso.tsx:36` sin corregir, y la QA de la #108 la confirmó. | La pantalla de detalle dice "Caso no encontrado" ante un `500`. Se registró como DEF-03 (#123), abierto al cierre del sprint. | Las observaciones no bloqueantes de la auditoría no se convierten en defecto ni en tarea, así que nadie las retoma. |
+| 2026-10-13 | El PR #118 se fusionó con la observación de `DetalleMiCaso.tsx:36` sin corregir, y la QA de la #108 la confirmó. | La pantalla de detalle dice "Caso no encontrado" ante un `500`. Se registró como DEF-03 (#123) y se corrigió con el PR #125. | Las observaciones no bloqueantes de la auditoría no se convierten en defecto ni en tarea, así que nadie las retoma. |
 | Todo el sprint | No se registraron dailies, capturas del tablero ni las fechas de entrada a cada columna. | No hay WIP diario. El Lead Time y el Cycle Time se calcularon con la fecha más probable. | Igual que en los sprints 1 y 2: no hay un responsable ni un momento fijo para registrarlas. |
 
 ## 6. Mejora acordada
@@ -103,5 +103,5 @@ El sprint duró una noche y una mañana, así que los tiempos son mucho más cor
 - Pruebas: [`docs/pruebas/casos_de_prueba.md`](../pruebas/casos_de_prueba.md)
 - Métricas: [`docs/metricas/seguimiento.xlsx`](../metricas/seguimiento.xlsx)
 - Defecto cerrado: #93 (DEF-02), corregido con el PR #110
-- Defecto abierto: #123 (DEF-03), asignado a @sukaNico con el milestone "Entrega final"
+- Defecto cerrado: #123 (DEF-03), corregido con el PR #125
 - Issue de ceremonias: #37

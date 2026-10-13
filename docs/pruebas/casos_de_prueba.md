@@ -1472,7 +1472,9 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 | Obtenido | La API responde `500` y la pantalla muestra "Caso no encontrado", igual que con un caso inexistente o ajeno. |
 | Causa | El `catch` de `frontend/src/pages/DetalleMiCaso.tsx:36` asigna siempre "Caso no encontrado", sin mirar el código de la respuesta. |
 | Impacto | Bajo: no impide el flujo ni expone datos de otros usuarios. Se reportó como observación en la auditoría de la #107 (PR #118), que se fusionó sin corregirlo, y se registró como defecto al cerrar el sprint. |
-| Estado | Abierto |
+| Corrección | PR #125, fusionado el 2026-10-13. Un `404` o un id no numérico muestran "Caso no encontrado"; otro `4xx`, el mensaje de la API; un `5xx` o un fallo de red, "No se pudo cargar el caso. Intenta de nuevo.". El PR también retiró una redirección por rol que sacaba del detalle a administrador, agente y validador. |
+| Verificación | Con los pasos de arriba la pantalla muestra "No se pudo cargar el caso. Intenta de nuevo.". Laura sigue viendo "Caso no encontrado" en `/mis-solicitudes/6`, `/999` y `/abc`, y Ana y Diego ven el #5 completo. ✅ |
+| Estado | Cerrado (2026-10-13) |
 
 ### Observaciones
 
@@ -1482,4 +1484,4 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 
 ### Conclusión
 
-HU-12 cumple E1 a E3, las reglas 1 a 4 y todas sus excepciones: el solicitante ve el detalle completo de sus casos, con atenciones e historial, no puede ver los casos de otros, y los datos sobreviven al reinicio. No se encontraron defectos críticos; se registró un defecto de la interfaz que no es crítico (DEF-03, #123). Candidatos a casos propios en la #38: un solicitante no puede ver un caso ajeno escribiendo la URL (E2), y un caso devuelto muestra todas sus atenciones en orden.
+HU-12 cumple E1 a E3, las reglas 1 a 4 y todas sus excepciones: el solicitante ve el detalle completo de sus casos, con atenciones e historial, no puede ver los casos de otros, y los datos sobreviven al reinicio. No se encontraron defectos críticos; se registró un defecto de la interfaz que no es crítico (DEF-03, #123), que se corrigió con el PR #125. Candidatos a casos propios en la #38: un solicitante no puede ver un caso ajeno escribiendo la URL (E2), y un caso devuelto muestra todas sus atenciones en orden.
