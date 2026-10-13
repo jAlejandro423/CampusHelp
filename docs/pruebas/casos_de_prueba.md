@@ -30,6 +30,7 @@ Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de a
 | HU-08 · Historial y flujo completo del MVP | Flujo completo con devolución, E1, E2, E3, E4 y excepciones | #80 | 2026-10-12 | ✅ Pasa |
 | HU-10 · Indicadores | E1, E2, E3, R4 y excepciones | #102 | 2026-10-13 | ✅ Pasa |
 | HU-11 · Gestionar categorías | E1, E2, E3, E4, E5, reglas 2 a 5 y excepciones | #105 | 2026-10-13 | ✅ Pasa |
+| HU-12 · Detalle del caso | E1, E2, E3, reglas 1 a 4 y excepciones | #108 | 2026-10-13 | ✅ Pasa |
 
 ---
 
@@ -1375,3 +1376,98 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 ### Conclusión
 
 HU-11 cumple E1 a E5, las reglas 1 a 5 y todas sus excepciones: las categorías creadas, editadas, desactivadas y reactivadas se reflejan en el formulario de registro, y los cambios sobreviven al reinicio. No se encontraron defectos. Candidatos a casos propios en la #38: editar solo el nombre conserva la descripción, y una categoría desactivada desaparece del registro pero los casos existentes la conservan.
+
+---
+
+## HU-12 · Detalle del caso (#108)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-13 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `90c172c` (incluye #106 y #107) |
+| Base de datos | MySQL 8.0.39 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos, 4 atenciones y 21 eventos de historial al inicio) |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantallas `/mis-solicitudes` y `/mis-solicitudes/:id`, usuarios de prueba **Laura Gómez** (id 1) y **Carlos Ruiz** (id 2), solicitantes, y **Ana Admin** (id 6, administradora) |
+
+Primero se ejecutaron los escenarios por la API (un script de Python con `urllib`). Después se repitió el recorrido desde la interfaz sobre la misma base.
+
+### E1 · Caso propio cerrado ✅
+
+**Pasos:** como Laura, abrir Mis Solicitudes, pulsar **Ver detalle** en el caso #5 (Cerrada) y pedir `GET /api/casos/5?usuario_id=1`.
+
+**Esperado:** se ven los datos del caso, la solución, el agente y el historial.
+
+**Obtenido**
+
+| Vía | Resultado |
+|---|---|
+| API | `200` con todos los campos: descripción, Laura Gómez como solicitante, Diego Torres como agente, `fecha_creacion`, `fecha_asignacion` y `fecha_cierre`. `atenciones` trae la atención 3 con su diagnóstico, solución, agente y fecha. `GET /api/casos/5/historial?usuario_id=1` → `200` con 5 eventos: `creacion`, `asignacion`, `cambio_estado`, `envio_validacion` y `cierre` |
+| Pantalla | Mis Solicitudes enlaza a `/mis-solicitudes/1`, `/3` y `/5`. El detalle del #5 muestra el título, "Solicitud · Plataformas académicas / Campus virtual", los badges P3 y **Cerrada**, la descripción, Solicitante Laura Gómez, Agente Diego Torres y las fechas Creado 5/10/26 8:00 a. m., Asignado 9:00 a. m. y Cierre 6/10/26 4:00 p. m. "Atenciones (1)" muestra el diagnóstico y la solución firmados por "Diego Torres · 6/10/26, 3:00 p. m.", y el historial va de "Caso registrado" a "Caso cerrado" (Pedro Validador) |
+
+**Evidencia:** [`hu12-e1-detalle.jpg`](../evidencias/pruebas/hu12-e1-detalle.jpg) y [`hu12-e1-historial.jpg`](../evidencias/pruebas/hu12-e1-historial.jpg)
+
+### E2 · Caso ajeno ✅
+
+**Pasos:** como Laura, escribir en la URL `/mis-solicitudes/6` (caso de Carlos) y pedir el caso por la API.
+
+**Esperado:** `404` por la API y "Caso no encontrado" en la pantalla.
+
+**Obtenido**
+
+| Prueba | Resultado |
+|---|---|
+| API: Laura pide el #6 o el #4, Carlos pide el #5 | `404` · `{"error":"Caso no encontrado","detalles":["No existe un caso con id N."]}`. Es la misma respuesta que para un caso que no existe (decisión R3) |
+| API: caso 999 | `404` con el mismo mensaje |
+| Pantalla: Laura en `/mis-solicitudes/6` | "Caso no encontrado", sin datos del caso |
+| Pantalla: `/mis-solicitudes/999` y `/mis-solicitudes/abc` | "Caso no encontrado" |
+| Pantalla: estando en el #5, cambiar a Carlos en el selector | La página vuelve a pedir el caso y muestra "Caso no encontrado" |
+
+**Evidencia:** [`hu12-e2-ajeno.jpg`](../evidencias/pruebas/hu12-e2-ajeno.jpg)
+
+### E3 · Caso propio sin atenciones ✅
+
+**Pasos:** como Laura, abrir el detalle del caso #1 (Pendiente, sin agente) y pedirlo por la API.
+
+**Esperado:** se ven los datos y el mensaje "Aún no hay atenciones registradas".
+
+**Obtenido:** la API responde `200` con `atenciones: []`, y `agente`, `fecha_asignacion` y `fecha_cierre` en `null`. La pantalla muestra los datos con los badges P1 y **Pendiente**, Agente "Sin asignar", Asignado y Cierre en "—", "Atenciones (0)" con **"Aún no hay atenciones registradas"**, y el historial con el evento "Caso registrado".
+
+**Evidencia:** [`hu12-e3-sin-atenciones.jpg`](../evidencias/pruebas/hu12-e3-sin-atenciones.jpg)
+
+### Otros criterios de HU-12
+
+| Regla | Prueba | Resultado | Estado |
+|---|---|---|---|
+| 1 · Varias atenciones en orden | El validador devolvió el #4 de Carlos (`200`) y María registró una segunda atención (`201`). Después, `GET /api/casos/4?usuario_id=2` | `200`, En atención, con las atenciones 2 (6/10) y 5 (13/10) en orden cronológico. Los ids y las claves coinciden con `GET /api/casos/4/atenciones`. En la pantalla, "Atenciones (2)" en ese orden y el historial termina con la devolución (con su motivo) y la atención registrada | ✅ |
+| 2 · Otros roles ven cualquier caso | Diego (agente), María (agente), Pedro (validador) y Ana (administradora) piden el #6 | `200` en los cuatro. En la pantalla, Ana ve el #5 completo | ✅ |
+| 4 · Solo lectura | `PUT`, `PATCH` y `DELETE` sobre `/api/casos/5` | `404`: no existen esas rutas. La pantalla no tiene controles de edición | ✅ |
+| Navegación | **← Volver** desde el detalle | Regresa a `/mis-solicitudes` | ✅ |
+
+### Excepciones de HU-12
+
+| Situación | Petición | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| Caso inexistente o ajeno | id 999, o el #6 pedido por Laura | `404` | `404` "Caso no encontrado" | ✅ |
+| Id inválido | id `abc`, `0` o `-1` | `400` | `400` "Datos inválidos" · "El id del caso y usuario_id deben ser enteros positivos." | ✅ |
+| `usuario_id` inválido | Sin `usuario_id`, con `abc` o con `0` | `400` | `400` con el mismo detalle | ✅ |
+| Usuario inexistente | `usuario_id=999` | `400` | `400` "El usuario indicado no existe o está inactivo." | ✅ |
+| Usuario inactivo | Laura inactiva temporalmente (`activo = 0`) | `400` | `400` con el mismo mensaje. Después se reactivó | ✅ |
+| Error de la base de datos | Se renombró la tabla temporalmente (`RENAME TABLE atencion TO atencion_x`) y se pidió el #5 | `500` | `500` · `{"error":"Table 'campushelp.atencion' doesn't exist","detalles":[]}`. Después se restauró la tabla y volvió a responder `200` | ✅ (ver observaciones) |
+
+### Prueba de reinicio
+
+Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo. `GET /api/casos/4?usuario_id=2` sigue En atención con las atenciones 2 y 5, el #5 sigue Cerrada con su `fecha_cierre` y una atención, y Laura sigue recibiendo `404` al pedir el #6. En la pantalla, Carlos ve el #4 con "Atenciones (2)". ✅
+
+### Observaciones
+
+- **La pantalla muestra "Caso no encontrado" ante cualquier error:** con la tabla `atencion` renombrada, la API responde `500` y la pantalla del #5 (como Ana) muestra "Caso no encontrado", igual que con un `404`. El `catch` de `frontend/src/pages/DetalleMiCaso.tsx:36` no distingue el código de la respuesta. Ese texto debería mostrarse solo con el `404`, y en los demás casos el mensaje de la API o "No se pudo cargar el caso". Se reportó como observación en la auditoría de la #107 (PR #118). No impide el flujo ni expone datos de otros usuarios, así que no se registra como defecto crítico.
+- **El `500` expone el mensaje interno de MySQL:** es la misma observación de HU-08 a HU-11 (`middlewares/errorHandler.js` devuelve `err.message`). No bloquea.
+- **Historial de un caso ajeno:** al cambiar a Carlos estando en el #5, el historial también se pide y responde `404`. La pantalla no muestra nada de ese historial.
+- En la consola del navegador solo aparecieron los `400`, `404` y `500` provocados por las pruebas, y el log de la API no registró errores.
+
+### Conclusión
+
+HU-12 cumple E1 a E3, las reglas 1 a 4 y todas sus excepciones: el solicitante ve el detalle completo de sus casos, con atenciones e historial, no puede ver los casos de otros, y los datos sobreviven al reinicio. No se encontraron defectos críticos. Candidatos a casos propios en la #38: un solicitante no puede ver un caso ajeno escribiendo la URL (E2), y un caso devuelto muestra todas sus atenciones en orden.
