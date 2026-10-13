@@ -293,3 +293,13 @@ Gestión solo para administrador activo, sin borrado físico.
 | Nombre 3–100 con `trim`, descripción opcional ≤ 255; `activa` booleano estricto | Regla 2 y excepción de la ficha; `PUT` no cambia el área (R2). |
 | Duplicado `(area_id, nombre)` → `409`, con chequeo previo + `catch ER_DUP_ENTRY` | Regla 3 a prueba de carreras; sin historial (R4). |
 | `GET ?todas=1` incluye inactivas con `area` y `activa`; otro valor se ignora | R3; el registro sigue con solo activas (E2/E4). La fila ahora siempre trae `area` y `activa` (aditivo para el FRONT). |
+
+## D-24 · GET detalle HU-12 (Issue #106)
+
+`GET /api/casos/:id?usuario_id=` → `200` con fila HU-02 + `descripcion`, fechas y `atenciones`.
+
+| Decisión | Motivo |
+|---|---|
+| Servicio propio `detalleService.js` (JOIN + atenciones en 2 consultas) | No toca `listarCasos`; el detalle trae más campos y otra forma. |
+| Sin historial en la respuesta (R2) | La pantalla lo pide a HU-08 y reutiliza su componente. |
+| Caso ajeno para solicitante → `404` idéntico (R3) | RN-05 como historial y atenciones (D-17/D-18). |
