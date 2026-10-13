@@ -181,6 +181,50 @@ async function listarCasos(filtros) {
     parametros.push(estadoRaw);
   }
 
+  // HU-09 (D-20): filtros combinables con AND. Vacío o ausente no restringe;
+  // fuera del dominio → 400. categoria_id que no pertenece a area_id da []
+  // (R2), sin error. area_id filtra por a.id y categoria_id por c.id.
+  const TIPOS_FILTRO = ['Incidente', 'Solicitud'];
+  const PRIORIDADES_FILTRO = ['P1', 'P2', 'P3'];
+  const tipoRaw = filtros ? filtros.tipo : undefined;
+  if (tipoRaw !== undefined && tipoRaw !== '') {
+    if (!TIPOS_FILTRO.includes(tipoRaw)) {
+      throw createError(400, 'Datos inválidos', [
+        `tipo inválido. Valores permitidos: ${TIPOS_FILTRO.join(', ')}.`,
+      ]);
+    }
+    condiciones.push('k.tipo = ?');
+    parametros.push(tipoRaw);
+  }
+  const prioridadRaw = filtros ? filtros.prioridad : undefined;
+  if (prioridadRaw !== undefined && prioridadRaw !== '') {
+    if (!PRIORIDADES_FILTRO.includes(prioridadRaw)) {
+      throw createError(400, 'Datos inválidos', [
+        `prioridad inválida. Valores permitidos: ${PRIORIDADES_FILTRO.join(', ')}.`,
+      ]);
+    }
+    condiciones.push('k.prioridad = ?');
+    parametros.push(prioridadRaw);
+  }
+  const areaIdRaw = filtros ? filtros.area_id : undefined;
+  if (areaIdRaw !== undefined && areaIdRaw !== '') {
+    const areaId = aEnteroPositivo(areaIdRaw);
+    if (areaId === null) {
+      throw createError(400, 'Datos inválidos', ['area_id debe ser un entero positivo.']);
+    }
+    condiciones.push('a.id = ?');
+    parametros.push(areaId);
+  }
+  const categoriaIdRaw = filtros ? filtros.categoria_id : undefined;
+  if (categoriaIdRaw !== undefined && categoriaIdRaw !== '') {
+    const categoriaId = aEnteroPositivo(categoriaIdRaw);
+    if (categoriaId === null) {
+      throw createError(400, 'Datos inválidos', ['categoria_id debe ser un entero positivo.']);
+    }
+    condiciones.push('c.id = ?');
+    parametros.push(categoriaId);
+  }
+
   // HU-03 · Bandeja del agente: solo casos no cerrados, P1 → P3 y, dentro de
   // cada prioridad, del más antiguo al más reciente. El ENUM prioridad se
   // ordenó como ('P1','P2','P3'), así que MySQL lo ordena en ese orden.

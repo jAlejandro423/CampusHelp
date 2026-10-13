@@ -261,3 +261,13 @@ Las fichas están en `docs/historias/HU-09.md`, `HU-10.md`, `HU-11.md` y `HU-12.
 | HU-11: editar no cambia el área; `GET /api/categorias?todas=1` incluye las inactivas | Cambiar el área movería casos ya registrados. El registro (HU-01) sigue viendo solo las activas. |
 | HU-12: `GET /api/casos/:id?usuario_id=` devuelve el caso con `descripcion`, fechas y `atenciones`; un caso ajeno para el solicitante responde `404` | RN-05 sin revelar qué casos existen (D-17 y D-18). El historial se reutiliza de HU-08. |
 | HU-12 se muestra en una página `/mis-solicitudes/:id`, no en un modal | Tiene más información que el historial y se puede enlazar. |
+
+## D-21 · Filtros HU-09 (Issue #97)
+
+`tipo`, `area_id`, `categoria_id` y `prioridad` en `listarCasos`, con AND junto a los existentes.
+
+| Decisión | Motivo |
+|---|---|
+| Mismo endpoint y condiciones AND, parametrizadas | R1 y D-10: sin endpoint nuevo ni filtros en memoria (regla 2). |
+| Vacío/ausente no restringe; fuera de dominio → `400 Datos inválidos` | Reglas 1 y 4; igual que los filtros previos. |
+| `area_id` filtra `a.id` y `categoria_id` filtra `c.id`; cruce sin coincidencias → `[]` | R2 y excepción de la ficha: área/categoría inexistente o cruzada da lista vacía, no error. |
