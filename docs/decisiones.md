@@ -246,3 +246,18 @@ Las fichas están en `docs/historias/HU-04.md`, `HU-06.md`, `HU-07.md` y `HU-08.
 | Aprobar → `Cerrada` + `fecha_cierre = NOW()`, evento `cierre`; motivo opcional guardado si llega | E1/CP-09 y RN-13; diseño de HU-07. |
 | Devolver → `En atención` **conservando `agente_id`**, motivo ≥ 10 obligatorio en `detalle`, evento `devolucion` | E2/CP-08 y RN-13; el agente que conoce el problema lo retoma. |
 | `estado=` en `GET /api/casos` (invalido → `400`), combinable | R3/D-15: lo necesita Por validar (#76) y lo reutiliza HU-09. |
+
+## D-20 · Refinamiento del Sprint 3 (2026-10-12 · Issue #37)
+
+Las fichas están en `docs/historias/HU-09.md`, `HU-10.md`, `HU-11.md` y `HU-12.md`.
+
+| Decisión | Motivo |
+|---|---|
+| HU-09 usa el mismo `GET /api/casos` con `tipo`, `area_id`, `categoria_id` y `prioridad`, combinables con AND junto a `estado`. Un valor fuera del dominio responde `400` | Un solo endpoint de listado (D-10). La validación queda en el backend. |
+| HU-09: una categoría que no pertenece al área no es un error, solo no hay coincidencias | Los filtros son independientes; el AND ya da el resultado correcto. |
+| HU-10: `GET /api/indicadores` calcula todo en SQL al consultar, con tiempos promedio en horas con un decimal (`null` si no hay datos) | Datos reales sin tablas extra. Los casos se resuelven en horas. |
+| HU-10 sin librería de gráficos: barras con CSS o tablas | Regla 10 de CLAUDE.md: no agregar dependencias. |
+| HU-11: `POST`, `PUT` y `PATCH /api/categorias` con `usuario_id` de un administrador activo (si no, `400`); nombre único por área (`409`); sin borrado físico | Igual que HU-04, 06 y 07. Los casos existentes conservan su categoría. |
+| HU-11: editar no cambia el área; `GET /api/categorias?todas=1` incluye las inactivas | Cambiar el área movería casos ya registrados. El registro (HU-01) sigue viendo solo las activas. |
+| HU-12: `GET /api/casos/:id?usuario_id=` devuelve el caso con `descripcion`, fechas y `atenciones`; un caso ajeno para el solicitante responde `404` | RN-05 sin revelar qué casos existen (D-17 y D-18). El historial se reutiliza de HU-08. |
+| HU-12 se muestra en una página `/mis-solicitudes/:id`, no en un modal | Tiene más información que el historial y se puede enlazar. |

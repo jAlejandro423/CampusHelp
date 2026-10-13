@@ -1,6 +1,6 @@
 # Matriz de trazabilidad – CampusHelp
 
-Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantallas, casos de prueba e issues. Las HU de los sprints 1 y 2 están refinadas (ver `docs/historias/`). Las del Sprint 3 se completan en su Sprint Planning; mientras tanto aparecen como *por refinar* y muestran lo que ya se sabe del taller.
+Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantallas, casos de prueba e issues. Las 12 HU están refinadas (ver `docs/historias/`): las de los sprints 1 y 2 en sus Planning y las del Sprint 3 en su Planning del 2026-10-12.
 
 ## Matriz
 
@@ -14,10 +14,10 @@ Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantall
 | HU-06 Registrar diagnóstico y solución | Agente asignado | RN-10, RN-12 | `POST` y `GET /api/casos/:id/atenciones` | `/bandeja-soporte` (Registrar atención) | CP-07 y E2–E5 de HU-06 (#74) | #16 · #72 #73 #74 | Refinada ([ficha](historias/HU-06.md)) |
 | HU-07 Aprobar o devolver | Validador | RN-08, RN-10, RN-13 | `POST /api/casos/:id/validacion`, `GET /api/casos?estado=` | `/por-validar` | CP-08, CP-09 y E3–E5 de HU-07 (#77) | #17 · #75 #76 #77 | Refinada ([ficha](historias/HU-07.md)) |
 | HU-08 Consultar historial | Solicitante, agente, validador, administrador | RN-05, RN-10 | `GET /api/casos/:id/historial?usuario_id=` | Ver historial en `/mis-solicitudes`, `/bandeja-soporte` y `/por-validar` | E1–E4 de HU-08 y flujo completo (#80) | #18 · #78 #79 #80 | Refinada ([ficha](historias/HU-08.md)) |
-| HU-09 Filtrar casos | Administrador | — | `GET /api/casos?estado=&tipo=&area_id=&categoria_id=&prioridad=` | `/casos` | CP-10 | #19 | Por refinar (Sprint 3) |
-| HU-10 Indicadores | Administrador | — | `GET /api/indicadores` | `/indicadores` | Por definir | #20 | Por refinar (Sprint 3) |
-| HU-11 Gestionar categorías | Administrador | RN-02 | `POST`, `PUT /api/categorias` y `PATCH /api/categorias/:id` | `/categorias` | Por definir | #21 | Por refinar (Sprint 3) |
-| HU-12 Detalle de mi caso y la solución | Solicitante | RN-05 | `GET /api/casos/:id` | Por definir | Por definir | #22 | Por refinar (Sprint 3) |
+| HU-09 Filtrar casos | Administrador | RN-14 | `GET /api/casos?estado=&tipo=&area_id=&categoria_id=&prioridad=` | `/casos` | CP-10 y E2–E4 de HU-09 (#99) | #19 · #97 #98 #99 | Refinada ([ficha](historias/HU-09.md)) |
+| HU-10 Indicadores | Administrador | RN-15 | `GET /api/indicadores` | `/indicadores` | E1–E3 de HU-10 (#102) | #20 · #100 #101 #102 | Refinada ([ficha](historias/HU-10.md)) |
+| HU-11 Gestionar categorías | Administrador | RN-02, RN-16 | `GET /api/categorias?todas=1`, `POST /api/categorias`, `PUT` y `PATCH /api/categorias/:id` | `/categorias` | E1–E5 de HU-11 (#105) | #21 · #103 #104 #105 | Refinada ([ficha](historias/HU-11.md)) |
+| HU-12 Detalle de mi caso y la solución | Solicitante | RN-05 | `GET /api/casos/:id?usuario_id=`, `GET /api/casos/:id/historial` | `/mis-solicitudes/:id` | E1–E3 de HU-12 (#108) | #22 · #106 #107 #108 | Refinada ([ficha](historias/HU-12.md)) |
 
 Los casos propios (CP-11 en adelante) se agregan a esta matriz cuando se escriban en la #38.
 
@@ -38,6 +38,9 @@ Los casos propios (CP-11 en adelante) se agregan a esta matriz cuando se escriba
 | RN-11 | Para pasar a `En atención`, el caso tiene agente asignado. | Backend (Sprint 2) |
 | RN-12 | Solo el agente asignado registra la atención, y no se pasa a `En validación` sin una atención con solución. | Backend (Sprint 2) |
 | RN-13 | Al cerrar se guarda `fecha_cierre`. Al devolver, el caso vuelve a `En atención` con el motivo en `historial.detalle`. | Backend (Sprint 2) |
+| RN-14 | Los filtros del listado se combinan con AND y se aplican en el backend. Un valor fuera del dominio responde 400. | Backend, `GET /api/casos` (Sprint 3) |
+| RN-15 | Los indicadores se calculan sobre los datos reales en cada consulta; los tiempos promedio van en horas. | Backend, `GET /api/indicadores` (Sprint 3) |
+| RN-16 | Solo un administrador activo gestiona categorías. El nombre es único por área y las categorías se desactivan, no se borran. | Backend, `/api/categorias` (Sprint 3) |
 
 ## Casos de prueba obligatorios
 
@@ -52,6 +55,6 @@ Los casos propios (CP-11 en adelante) se agregan a esta matriz cuando se escriba
 | CP-07 | Registrar diagnóstico y solución | HU-06 | RN-12 |
 | CP-08 | Devolver desde validación | HU-07 | RN-08, RN-13 |
 | CP-09 | Cerrar caso aprobado | HU-07 | RN-08, RN-13 |
-| CP-10 | Filtrar por tipo, área y prioridad | HU-09 | — |
+| CP-10 | Filtrar por tipo, área y prioridad | HU-09 | RN-14 |
 
 Los resultados reales de cada caso se registran en `docs/pruebas/`.

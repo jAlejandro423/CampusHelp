@@ -15,7 +15,7 @@ con persistencia en MySQL, historial completo e indicadores calculados sobre dat
 | 0 – Preparación | 5 oct | Herramientas, BD, tablero y políticas listos para empezar a desarrollar. | — | — |
 | 1 | 6–7 oct (real: 6–10 oct) | Un solicitante registra incidentes y solicitudes, y un agente los ve en su bandeja y cambia su estado. | HU-01, HU-02, HU-03, HU-05 | 16 |
 | 2 | 11 oct (replanificado; antes 8–10 oct) | Completar el flujo Asignar → Atender → Validar → Cerrar con historial trazable. | HU-04, HU-06, HU-07, HU-08 | 18 |
-| 3 | 12 oct (replanificado; antes 11–12 oct) | Filtros, indicadores, gestión de categorías, detalle del caso, QA completo y README ejecutable. | HU-09, HU-10, HU-11, HU-12 | 14 |
+| 3 | 12 oct (noche) – 13 oct (replanificado; antes 11–12 oct) | Filtros, indicadores, gestión de categorías, detalle del caso, QA completo y README ejecutable. | HU-09, HU-10, HU-11, HU-12 | 14 |
 | Entrega | 13 oct | Verificación final, demo y defensa. | — | — |
 
 > Los sprints duran menos de lo que sugiere el taller (1 semana) porque el plazo total es de 8 días. La cadencia y las ceremonias se conservan.
@@ -128,3 +128,4 @@ Cualquier cambio a estas políticas se acuerda en una retrospectiva y se registr
 |---|---|---|
 | 2026-10-10 | Sección 8: la captura diaria del tablero se reemplaza por el roadmap del Project. | Retrospectiva del Sprint 1: las capturas diarias no se tomaron y el roadmap muestra la fecha real de cierre de cada issue ([sprint-1.md](retrospectivas/sprint-1.md)). |
 | 2026-10-10 | Sección 1: el Sprint 2 pasa al 11 oct y el Sprint 3 al 12 oct. | El Sprint 1 terminó el 10 oct, 3 días tarde ([retrospectiva](retrospectivas/sprint-1.md)). Se decidió en el Sprint 2 Planning ([sprint-2.md](sprints/sprint-2.md)). |
+| 2026-10-12 | Sección 1: el Sprint 3 pasa a la noche del 12 oct y la mañana del 13 oct. | El Sprint 2 terminó el 12 oct, un día tarde ([retrospectiva](retrospectivas/sprint-2.md)). Se decidió en el Sprint 3 Planning ([sprint-3.md](sprints/sprint-3.md)). |
