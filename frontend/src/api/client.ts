@@ -411,3 +411,86 @@ export interface Indicadores {
 export function obtenerIndicadores(): Promise<Indicadores> {
   return getJson<Indicadores>("/api/indicadores");
 }
+
+// HU-11 · Gestión de categorías (solo administrador activo). PUT reemplaza
+// nombre y descripción: si no se envía descripcion queda en NULL, así que el
+// formulario de edición siempre envía ambas aunque solo cambie el nombre.
+export interface CategoriaAdmin {
+  id: number;
+  area_id: number;
+  area: string;
+  nombre: string;
+  descripcion: string | null;
+  activa: boolean;
+}
+
+export function listarCategoriasTodas(): Promise<CategoriaAdmin[]> {
+  return getJson<CategoriaAdmin[]>("/api/categorias?todas=1");
+}
+
+async function mutarCategoria<T>(
+  metodo: string,
+  path: string,
+  payload: object,
+  mensaje: string
+): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: metodo,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    let error = mensaje;
+    let detalles: string[] = [];
+    try {
+      const data = (await response.json()) as {
+        error?: string;
+        detalles?: string[];
+      };
+      if (data.error) error = data.error;
+      if (Array.isArray(data.detalles)) detalles = data.detalles;
+    } catch {
+      // Respuesta no JSON: se usa el mensaje genérico.
+    }
+    throw new ApiError(response.status, error, detalles);
+  }
+  return response.json() as Promise<T>;
+}
+
+export function crearCategoria(payload: {
+  usuario_id: number;
+  area_id: number;
+  nombre: string;
+  descripcion?: string;
+}): Promise<CategoriaAdmin> {
+  return mutarCategoria<CategoriaAdmin>(
+    "POST",
+    "/api/categorias",
+    payload,
+    "No se pudo crear la categoría"
+  );
+}
+
+export function editarCategoria(
+  id: number,
+  payload: { usuario_id: number; nombre: string; descripcion: string }
+): Promise<CategoriaAdmin> {
+  return mutarCategoria<CategoriaAdmin>(
+    "PUT",
+    `/api/categorias/${id}`,
+    payload,
+    "No se pudo editar la categoría"
+  );
+}
+
+export function cambiarActivaCategoria(
+  id: number,
+  payload: { usuario_id: number; activa: boolean }
+): Promise<CategoriaAdmin> {
+  return mutarCategoria<CategoriaAdmin>(
+    "PATCH",
+    `/api/categorias/${id}`,
+    payload,
+    "No se pudo cambiar el estado de la categoría"
+  );
+}
