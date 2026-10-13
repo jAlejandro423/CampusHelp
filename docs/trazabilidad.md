@@ -1,6 +1,6 @@
 # Matriz de trazabilidad – CampusHelp
 
-Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantallas, casos de prueba e issues. Las 12 HU están refinadas (ver `docs/historias/`): las de los sprints 1 y 2 en sus Planning y las del Sprint 3 en su Planning del 2026-10-12.
+Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantallas, casos de prueba e issues. El documento de requisitos completo (actores, Product Backlog, requisitos no funcionales y cambios del backlog) está en [`requisitos.md`](requisitos.md). Las 12 HU están refinadas (ver `docs/historias/`): las de los sprints 1 y 2 en sus Planning y las del Sprint 3 en su Planning del 2026-10-12.
 
 ## Matriz
 
@@ -9,8 +9,8 @@ Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantall
 | HU-01 Registrar incidente o solicitud | Solicitante | RN-01, RN-02, RN-03, RN-04, RN-10 | `POST /api/casos`, `GET /api/areas`, `GET /api/categorias?area_id=` | `/crear-caso` | CP-01, CP-02, CP-03, CP-11 | #11 · #23 #24 #25 | Refinada ([ficha](historias/HU-01.md)) |
 | HU-02 Consultar mis casos | Solicitante | RN-05 | `GET /api/casos?usuario_id=` | `/mis-solicitudes` | E1–E4 de HU-02 (#28) | #12 · #26 #27 #28 | Refinada ([ficha](historias/HU-02.md)) |
 | HU-03 Bandeja de casos pendientes | Agente | RN-06 | `GET /api/casos?bandeja=1` | `/bandeja-soporte` | CP-01 y E1–E4 de HU-03 (#31) | #13 · #29 #30 #31 | Refinada ([ficha](historias/HU-03.md)) |
-| HU-05 Cambiar el estado | Agente | RN-07, RN-08, RN-09, RN-10 | `PATCH /api/casos/:id/estado` | `/bandeja-soporte` (controles por fila) | CP-04, CP-05, CP-14 y E3–E5 de HU-05 (#34) | #15 · #32 #33 #34 | Refinada ([ficha](historias/HU-05.md)) |
 | HU-04 Asignarme un caso | Agente | RN-10, RN-11 | `PATCH /api/casos/:id/asignar` | `/bandeja-soporte` (botón Asignarme) | CP-06 y E2–E5 de HU-04 (#71) | #14 · #69 #70 #71 | Refinada ([ficha](historias/HU-04.md)) |
+| HU-05 Cambiar el estado | Agente | RN-07, RN-08, RN-09, RN-10 | `PATCH /api/casos/:id/estado` | `/bandeja-soporte` (controles por fila) | CP-04, CP-05, CP-14 y E3–E5 de HU-05 (#34) | #15 · #32 #33 #34 | Refinada ([ficha](historias/HU-05.md)) |
 | HU-06 Registrar diagnóstico y solución | Agente asignado | RN-10, RN-12 | `POST` y `GET /api/casos/:id/atenciones` | `/bandeja-soporte` (Registrar atención) | CP-07, CP-12 y E2–E5 de HU-06 (#74) | #16 · #72 #73 #74 | Refinada ([ficha](historias/HU-06.md)) |
 | HU-07 Aprobar o devolver | Validador | RN-08, RN-10, RN-13 | `POST /api/casos/:id/validacion`, `GET /api/casos?estado=` | `/por-validar` | CP-08, CP-09, CP-13, CP-17, CP-18 y E3–E5 de HU-07 (#77) | #17 · #75 #76 #77 | Refinada ([ficha](historias/HU-07.md)) |
 | HU-08 Consultar historial | Solicitante, agente, validador, administrador | RN-05, RN-10 | `GET /api/casos/:id/historial?usuario_id=` | Ver historial en `/mis-solicitudes`, `/bandeja-soporte` y `/por-validar` | CP-16, CP-18, E1–E4 de HU-08 y flujo completo (#80) | #18 · #78 #79 #80 | Refinada ([ficha](historias/HU-08.md)) |
