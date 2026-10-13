@@ -22,6 +22,7 @@ con todos los valores (incluidos 0) y promedios en horas con un decimal
 - `GET /api/indicadores` real: total 6, grupos completos y tiempos
   `7.1 h / 41 h` (E1 contra SQL directa).
 - Sin cerrados el promedio de cierre sería `null → Sin datos` (E3, por diseño).
+- Los promedios se muestran siempre con un decimal (`41.0 h`), aunque el backend envíe `41` (hallado en la auditoría).
 - Sin conflictos: `client.ts`, `Dashboard.tsx` + este doc.
 
 ## Trazabilidad

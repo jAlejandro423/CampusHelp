@@ -291,7 +291,8 @@ export interface HistorialEvento {
   detalle: string | null;
 }
 
-export function obtenerHistorial(  casoId: number,
+export function obtenerHistorial(
+  casoId: number,
   usuarioId: number
 ): Promise<HistorialEvento[]> {
   const params = new URLSearchParams();

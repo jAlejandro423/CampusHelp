@@ -122,7 +122,7 @@ function Dashboard() {
                 valor={
                   datos.tiempos.promedio_horas_asignacion === null
                     ? "Sin datos"
-                    : `${datos.tiempos.promedio_horas_asignacion} h`
+                    : `${datos.tiempos.promedio_horas_asignacion.toFixed(1)} h`
                 }
                 detalle={`Sobre ${datos.tiempos.casos_asignados} casos asignados`}
               />
@@ -131,7 +131,7 @@ function Dashboard() {
                 valor={
                   datos.tiempos.promedio_horas_cierre === null
                     ? "Sin datos"
-                    : `${datos.tiempos.promedio_horas_cierre} h`
+                    : `${datos.tiempos.promedio_horas_cierre.toFixed(1)} h`
                 }
                 detalle={`Sobre ${datos.tiempos.casos_cerrados} casos cerrados`}
               />
