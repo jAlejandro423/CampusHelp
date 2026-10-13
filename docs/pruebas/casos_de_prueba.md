@@ -27,6 +27,7 @@ Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de a
 |---|---|---|---|---|
 | HU-02 · Consultar mis casos | E1, E2, E3, E4 y excepciones | #28 | 2026-10-10 | ✅ Pasa |
 | HU-03 · Bandeja de casos pendientes | E1, E2, E3, E4, regla 4 y excepciones | #31 | 2026-10-10 | ✅ Pasa |
+| HU-08 · Historial y flujo completo del MVP | Flujo completo con devolución, E1, E2, E3, E4 y excepciones | #80 | 2026-10-12 | ✅ Pasa |
 
 ---
 
@@ -885,3 +886,133 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 ### Conclusión
 
 HU-07 cumple CP-08, CP-09, E3 a E5, la regla 5 y todas sus excepciones, incluidos la concurrencia y el *rollback*. Se registró un defecto de la interfaz que no es crítico (DEF-02, #93). Candidatos a casos propios en la #38: aprobar con motivo y dos validaciones simultáneas del mismo caso.
+
+---
+
+## HU-08 · Historial y flujo completo del MVP (#80)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-12 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `0c1d67b` (incluye HU-01 a HU-08) |
+| Base de datos | MySQL 8.0 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos, 4 atenciones y 21 registros de historial al inicio). Para probar un usuario inactivo se agregó el usuario de prueba **Usuario Inactivo** (id 7, solicitante, `activo = 0`) solo en esta base y se borró al terminar. |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite. Usuarios de prueba: **Laura Gómez** (id 1, solicitante), **Diego Torres** (id 3, agente), **Pedro Validador** (id 5, validador) y **Ana Admin** (id 6). **Carlos Ruiz** (id 2, solicitante) se usó como solicitante ajeno. |
+
+### Flujo completo del MVP desde la interfaz ✅
+
+Se recorrió **Registrar → Clasificar → Priorizar → Asignar → Atender → Validar → Cerrar**, con una devolución, usando solo la interfaz:
+
+| # | Usuario | Pantalla | Acción | Resultado |
+|---|---|---|---|---|
+| 1 | Laura | `/crear-caso` | Registrar un Incidente de **Hardware / Proyector**, **P1**, "Proyector del aula 201 no muestra imagen", con la descripción "El proyector del aula 201 enciende pero no muestra la imagen del computador." | "¡Caso #7 registrado con éxito!" · `Pendiente` |
+| 2 | Diego | `/bandeja-soporte` | **Asignarme** en el `#7` | `En análisis`, agente Diego Torres |
+| 3 | Diego | `/bandeja-soporte` | **Pasar a En atención** | `En atención` |
+| 4 | Diego | `/bandeja-soporte` | **Registrar atención**: "El cable HDMI del aula 201 está dañado y no transmite señal." / "Se reemplazó el cable HDMI y el proyector muestra la imagen." | Atención guardada |
+| 5 | Diego | `/bandeja-soporte` | **Pasar a En validación** | `En validación` · "Sin acciones" |
+| 6 | Pedro | `/por-validar` | **Devolver** con el motivo "La imagen se ve con parpadeo; revisar también el puerto HDMI del proyector." | El `#7` sale de la lista y vuelve a `En atención` con Diego |
+| 7 | Diego | `/bandeja-soporte` | **Registrar atención**: "El puerto HDMI del proyector tiene un pin doblado que causa el parpadeo." / "Se reemplazó el módulo HDMI del proyector y la imagen se ve estable." | Atención guardada |
+| 8 | Diego | `/bandeja-soporte` | **Pasar a En validación** | `En validación` |
+| 9 | Pedro | `/por-validar` | **Aprobar** el `#7`, que muestra la segunda solución | El `#7` sale de la lista |
+| 10 | Laura | `/mis-solicitudes` | Consultar | El `#7` aparece primero y `Cerrada` |
+
+**En MySQL**
+
+```text
+id  estado   agente_id  fecha_creacion       fecha_asignacion     fecha_cierre
+7   Cerrada  3          2026-10-12 20:21:31  2026-10-12 20:22:05  2026-10-12 20:24:35
+
+id  diagnostico                                                              agente_id  fecha
+5   El cable HDMI del aula 201 está dañado y no transmite señal.             3          2026-10-12 20:22:33
+6   El puerto HDMI del proyector tiene un pin doblado que causa el parpadeo. 3          2026-10-12 20:24:14
+```
+
+**Evidencia:** [`hu08-flujo-registro.jpg`](../evidencias/pruebas/hu08-flujo-registro.jpg), [`hu08-flujo-atencion.jpg`](../evidencias/pruebas/hu08-flujo-atencion.jpg)
+
+### E1 · Historial del flujo completo, en orden, con usuario y fecha ✅
+
+**Pasos:** con Laura, pulsar **Ver historial** en el `#7` desde `/mis-solicitudes`. Después, `GET /api/casos/7/historial` con `usuario_id` 1, 3, 5 y 6.
+
+**Esperado:** aparecen en orden la creación, la asignación, los cambios de estado, la atención, el envío a validación y el cierre, cada uno con usuario y fecha.
+
+**Obtenido**
+- La línea de tiempo muestra 9 eventos en orden: Caso registrado (Laura) → Agente asignado (Diego) → Cambio de estado → Atención registrada → Enviado a validación → Devuelto → Atención registrada → Enviado a validación → Caso cerrado (Pedro). Cada uno tiene los badges de estado, el usuario y la fecha.
+- La API responde `200` con los mismos 9 eventos, en el mismo orden, para Laura (dueña), Diego (agente), Pedro (validador) y Ana (administradora).
+- En MySQL:
+
+```text
+id  evento            estado_anterior  estado_nuevo   usuario_id  fecha                detalle
+22  creacion          NULL             Pendiente      1           2026-10-12 20:21:31  Caso registrado desde POST /api/casos (HU-01).
+23  asignacion        Pendiente        En análisis    3           2026-10-12 20:22:05  El agente asume la atención del caso (HU-04).
+24  cambio_estado     En análisis      En atención    3           2026-10-12 20:22:15  NULL
+25  atencion          En atención      En atención    3           2026-10-12 20:22:33  El agente registra diagnóstico y solución (HU-06).
+26  envio_validacion  En atención      En validación  3           2026-10-12 20:22:38  NULL
+27  devolucion        En validación    En atención    5           2026-10-12 20:23:41  La imagen se ve con parpadeo; revisar también el puerto HDMI del proyector.
+28  atencion          En atención      En atención    3           2026-10-12 20:24:14  El agente registra diagnóstico y solución (HU-06).
+29  envio_validacion  En atención      En validación  3           2026-10-12 20:24:19  NULL
+30  cierre            En validación    Cerrada        5           2026-10-12 20:24:35  Validación aprobada; se cierra el caso.
+```
+
+Cada acción del flujo dejó exactamente un registro, y las fechas de `fecha_asignacion` y `fecha_cierre` del caso coinciden con las de los eventos `asignacion` y `cierre`.
+
+**Evidencia:** [`hu08-e1-historial-inicio.jpg`](../evidencias/pruebas/hu08-e1-historial-inicio.jpg), [`hu08-e1-historial-cierre.jpg`](../evidencias/pruebas/hu08-e1-historial-cierre.jpg)
+
+### E2 · La devolución aparece con su motivo ✅
+
+**Pasos:** devolver el `#7` desde `/por-validar` con un motivo y consultar el historial.
+
+**Esperado:** aparece la devolución con su motivo.
+
+**Obtenido:** la línea de tiempo muestra "Devuelto: La imagen se ve con parpadeo; revisar también el puerto HDMI del proyector.", con `En validación → En atención`, Pedro Validador y la fecha. En la API y en MySQL es el evento `devolucion` (id 27), con el motivo en `detalle`.
+
+**Evidencia:** [`hu08-e2-devolucion.jpg`](../evidencias/pruebas/hu08-e2-devolucion.jpg) y [`hu08-e1-historial-cierre.jpg`](../evidencias/pruebas/hu08-e1-historial-cierre.jpg)
+
+### E3 · Un solicitante ajeno recibe 404 ✅
+
+**Pasos:** `GET /api/casos/7/historial?usuario_id=2` (Carlos Ruiz, que no registró el `#7`).
+
+**Esperado:** `404` sin datos.
+
+**Obtenido:** `404` · "Caso no encontrado" · "No existe un caso con id 7.". Es la misma respuesta que para un caso inexistente, así que no revela que el caso existe. En la interfaz, el `#7` no aparece en Mis Solicitudes de Carlos.
+
+### E4 · "Ver historial" funciona en las tres pantallas ✅
+
+| Pantalla | Usuario | Resultado |
+|---|---|---|
+| `/mis-solicitudes` | Laura | Abre la línea de tiempo del `#7` con los 9 eventos (ver E1) |
+| `/bandeja-soporte` | Diego | Con el `#7` recién devuelto, abre la línea de tiempo con 6 eventos, el último "Devuelto: …" |
+| `/por-validar` | Pedro | Con el `#7` reenviado, abre la línea de tiempo con 8 eventos, el último "Enviado a validación" |
+
+En las tres el modal se cierra con **Cerrar** y la lista sigue igual.
+
+**Evidencia:** [`hu08-e4-bandeja.jpg`](../evidencias/pruebas/hu08-e4-bandeja.jpg)
+
+### Excepciones de HU-08
+
+| Situación | Petición | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| El caso no existe | `GET /api/casos/999/historial?usuario_id=1` | `404` | `404` · "Caso no encontrado" · "No existe un caso con id 999." | ✅ |
+| El solicitante pide un caso que no es suyo | Ver E3 | `404` | `404` | ✅ |
+| `id` no es entero positivo | `id` = `abc` y `0` | `400` | `400` · "Datos inválidos" · "El id del caso debe ser un entero positivo." | ✅ |
+| `usuario_id` no es entero positivo | `usuario_id=x` y sin `usuario_id` | `400` | `400` · "usuario_id debe ser un entero positivo." | ✅ |
+| El usuario no existe | `usuario_id=99` | `400` | `400` · "El usuario indicado no existe o está inactivo." | ✅ |
+| El usuario está inactivo | `usuario_id=7` (Usuario Inactivo) | `400` | `400` · "El usuario indicado no existe o está inactivo." | ✅ |
+| Error de la base de datos | Se renombró la tabla temporalmente (`RENAME TABLE historial TO historial_x`) y se pidió el historial del `#7` | `500` | `500` · "Table 'campushelp.historial' doesn't exist". Después se restauró la tabla y la petición volvió a responder `200`. | ✅ (ver observaciones) |
+
+### Prueba de reinicio
+
+Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo. `GET /api/casos/7/historial?usuario_id=1` responde `200` con los mismos 9 eventos en el mismo orden y el motivo de la devolución. Con `usuario_id=2` sigue respondiendo `404`. ✅
+
+### Observaciones
+
+- **El `500` expone el mensaje interno de MySQL:** `middlewares/errorHandler.js` devuelve `err.message` tal cual, así que el usuario ve "Table 'campushelp.historial' doesn't exist". Cumple el código y el formato `{ error, detalles }`, pero se sugiere un mensaje genérico (por ejemplo, "No se pudo consultar el historial"), como ya hace HU-07 con "No se pudo validar el caso". No bloquea.
+- **La atención se muestra como `En atención → En atención`:** el evento `atencion` no cambia el estado y la línea de tiempo pinta los dos badges iguales. Es correcto, pero podría mostrarse un solo badge.
+- **`cambio_estado` y `envio_validacion` no tienen `detalle`:** la línea de tiempo los muestra sin texto adicional. No afecta los criterios.
+- Durante esta ejecución no aparecieron errores nuevos en la consola del navegador, y el log de la API no registró errores.
+
+### Conclusión
+
+El flujo principal del MVP funciona de punta a punta desde la interfaz, con persistencia en MySQL y una devolución intermedia. HU-08 cumple E1 a E4 y todas sus excepciones, y el historial sobrevive al reinicio. No se encontraron defectos nuevos. Candidato a caso propio en la #38: flujo completo con devolución y verificación del historial.
