@@ -62,7 +62,7 @@ La fecha de Done es el cierre de la issue de la historia en GitHub, en hora de C
 | [HU-10](historias/HU-10.md) | Como administrador quiero ver indicadores del servicio **para** conocer cómo se comporta la atención | P2 | 5 | 3 | Totales por estado, tipo, prioridad y área, y tiempos promedio de asignación y cierre, calculados sobre los datos reales (3 escenarios). | ✅ Done (2026-10-13) |
 | [HU-11](historias/HU-11.md) | Como administrador quiero crear, editar y activar o desactivar categorías **para** mantener al día la clasificación | P2 | 3 | 3 | Nombre único por área. Las categorías se desactivan, no se borran, y las inactivas no se ofrecen al registrar (5 escenarios). | ✅ Done (2026-10-13) |
 | [HU-12](historias/HU-12.md) | Como solicitante quiero ver el detalle de mi caso y la solución **para** saber cómo se resolvió | P3 | 3 | 3 | Detalle con descripción, fechas, atenciones e historial. Un caso ajeno responde `404` (3 escenarios). | ✅ Done (2026-10-13) |
-| | **Total** | | **50** | | | **12 / 12 Done** |
+| | **Total** | | **48** | | | **12 / 12 Done** |
 
 Por sprint: Sprint 1, 16 puntos · Sprint 2, 18 · Sprint 3, 14 ([políticas](politicas.md)).
 
