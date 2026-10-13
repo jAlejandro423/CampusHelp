@@ -413,6 +413,40 @@ export function obtenerIndicadores(): Promise<Indicadores> {
   return getJson<Indicadores>("/api/indicadores");
 }
 
+// HU-12 · Detalle con atenciones (el historial se pide aparte, R2).
+// Caso ajeno para el solicitante → 404 (R3).
+export interface DetalleCaso {
+  id: number;
+  tipo: TipoCaso;
+  titulo: string;
+  descripcion: string;
+  prioridad: PrioridadCaso;
+  estado: string;
+  fecha_creacion: string;
+  fecha_asignacion: string | null;
+  fecha_cierre: string | null;
+  area_id: number;
+  area: string;
+  categoria_id: number;
+  categoria: string;
+  usuario_id: number;
+  solicitante: string;
+  agente_id: number | null;
+  agente: string | null;
+  atenciones: Atencion[];
+}
+
+export function obtenerDetalle(
+  casoId: number,
+  usuarioId: number
+): Promise<DetalleCaso> {
+  const params = new URLSearchParams();
+  params.set("usuario_id", String(usuarioId));
+  return getJson<DetalleCaso>(
+    `/api/casos/${casoId}?${params.toString()}`
+  );
+}
+
 // HU-11 · Gestión de categorías (solo administrador activo). PUT reemplaza
 // nombre y descripción: si no se envía descripcion queda en NULL, así que el
 // formulario de edición siempre envía ambas aunque solo cambie el nombre.

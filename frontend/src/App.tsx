@@ -4,6 +4,7 @@ import { UsuarioProvider } from "./context/UsuarioContext";
 import MainLayout from "./layouts/MainLayout";
 import CrearCaso from "./pages/CrearCaso";
 import MisSolicitudes from "./pages/MisSolicitudes";
+import DetalleMiCaso from "./pages/DetalleMiCaso";
 import BandejaSoporte from "./pages/BandejaSoporte";
 import Dashboard from "./pages/Dashboard";
 import PorValidar from "./pages/PorValidar";
@@ -31,6 +32,11 @@ function App() {
             <Route
               path="/mis-solicitudes"
               element={<MisSolicitudes />}
+            />
+
+            <Route
+              path="/mis-solicitudes/:id"
+              element={<DetalleMiCaso />}
             />
 
             <Route

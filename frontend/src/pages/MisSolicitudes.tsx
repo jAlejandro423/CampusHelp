@@ -87,7 +87,8 @@ function MisSolicitudes() {
                   <th className="py-2 pr-4">Prioridad</th>
                   <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Fecha</th>
-                  <th className="py-2">Historial</th>
+                  <th className="py-2 pr-4">Historial</th>
+                  <th className="py-2">Detalle</th>
                 </tr>
               </thead>
               <tbody>
@@ -121,7 +122,7 @@ function MisSolicitudes() {
                     <td className="py-3 pr-4 text-slate-500">
                       {formatearFecha(caso.fecha_creacion)}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 pr-4">
                       <button
                         type="button"
                         onClick={() => setHistorialId(caso.id)}
@@ -129,6 +130,14 @@ function MisSolicitudes() {
                       >
                         Ver historial
                       </button>
+                    </td>
+                    <td className="py-3">
+                      <Link
+                        to={`/mis-solicitudes/${caso.id}`}
+                        className="font-semibold text-blue-600 hover:text-blue-800"
+                      >
+                        Ver detalle
+                      </Link>
                     </td>
                   </tr>
                 ))}
