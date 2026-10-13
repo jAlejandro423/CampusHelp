@@ -6,20 +6,20 @@ Relaciona cada historia de usuario con sus reglas de negocio, endpoints, pantall
 
 | HU | Actor | Reglas de negocio | Endpoint | Pantalla | Casos de prueba | Issues | Estado del refinamiento |
 |---|---|---|---|---|---|---|---|
-| HU-01 Registrar incidente o solicitud | Solicitante | RN-01, RN-02, RN-03, RN-04, RN-10 | `POST /api/casos`, `GET /api/areas`, `GET /api/categorias?area_id=` | `/crear-caso` | CP-01, CP-02, CP-03 | #11 · #23 #24 #25 | Refinada ([ficha](historias/HU-01.md)) |
+| HU-01 Registrar incidente o solicitud | Solicitante | RN-01, RN-02, RN-03, RN-04, RN-10 | `POST /api/casos`, `GET /api/areas`, `GET /api/categorias?area_id=` | `/crear-caso` | CP-01, CP-02, CP-03, CP-11 | #11 · #23 #24 #25 | Refinada ([ficha](historias/HU-01.md)) |
 | HU-02 Consultar mis casos | Solicitante | RN-05 | `GET /api/casos?usuario_id=` | `/mis-solicitudes` | E1–E4 de HU-02 (#28) | #12 · #26 #27 #28 | Refinada ([ficha](historias/HU-02.md)) |
 | HU-03 Bandeja de casos pendientes | Agente | RN-06 | `GET /api/casos?bandeja=1` | `/bandeja-soporte` | CP-01 y E1–E4 de HU-03 (#31) | #13 · #29 #30 #31 | Refinada ([ficha](historias/HU-03.md)) |
-| HU-05 Cambiar el estado | Agente | RN-07, RN-08, RN-09, RN-10 | `PATCH /api/casos/:id/estado` | `/bandeja-soporte` (controles por fila) | CP-04, CP-05 y E3–E5 de HU-05 (#34) | #15 · #32 #33 #34 | Refinada ([ficha](historias/HU-05.md)) |
+| HU-05 Cambiar el estado | Agente | RN-07, RN-08, RN-09, RN-10 | `PATCH /api/casos/:id/estado` | `/bandeja-soporte` (controles por fila) | CP-04, CP-05, CP-14 y E3–E5 de HU-05 (#34) | #15 · #32 #33 #34 | Refinada ([ficha](historias/HU-05.md)) |
 | HU-04 Asignarme un caso | Agente | RN-10, RN-11 | `PATCH /api/casos/:id/asignar` | `/bandeja-soporte` (botón Asignarme) | CP-06 y E2–E5 de HU-04 (#71) | #14 · #69 #70 #71 | Refinada ([ficha](historias/HU-04.md)) |
-| HU-06 Registrar diagnóstico y solución | Agente asignado | RN-10, RN-12 | `POST` y `GET /api/casos/:id/atenciones` | `/bandeja-soporte` (Registrar atención) | CP-07 y E2–E5 de HU-06 (#74) | #16 · #72 #73 #74 | Refinada ([ficha](historias/HU-06.md)) |
-| HU-07 Aprobar o devolver | Validador | RN-08, RN-10, RN-13 | `POST /api/casos/:id/validacion`, `GET /api/casos?estado=` | `/por-validar` | CP-08, CP-09 y E3–E5 de HU-07 (#77) | #17 · #75 #76 #77 | Refinada ([ficha](historias/HU-07.md)) |
-| HU-08 Consultar historial | Solicitante, agente, validador, administrador | RN-05, RN-10 | `GET /api/casos/:id/historial?usuario_id=` | Ver historial en `/mis-solicitudes`, `/bandeja-soporte` y `/por-validar` | E1–E4 de HU-08 y flujo completo (#80) | #18 · #78 #79 #80 | Refinada ([ficha](historias/HU-08.md)) |
+| HU-06 Registrar diagnóstico y solución | Agente asignado | RN-10, RN-12 | `POST` y `GET /api/casos/:id/atenciones` | `/bandeja-soporte` (Registrar atención) | CP-07, CP-12 y E2–E5 de HU-06 (#74) | #16 · #72 #73 #74 | Refinada ([ficha](historias/HU-06.md)) |
+| HU-07 Aprobar o devolver | Validador | RN-08, RN-10, RN-13 | `POST /api/casos/:id/validacion`, `GET /api/casos?estado=` | `/por-validar` | CP-08, CP-09, CP-13, CP-17, CP-18 y E3–E5 de HU-07 (#77) | #17 · #75 #76 #77 | Refinada ([ficha](historias/HU-07.md)) |
+| HU-08 Consultar historial | Solicitante, agente, validador, administrador | RN-05, RN-10 | `GET /api/casos/:id/historial?usuario_id=` | Ver historial en `/mis-solicitudes`, `/bandeja-soporte` y `/por-validar` | CP-16, CP-18, E1–E4 de HU-08 y flujo completo (#80) | #18 · #78 #79 #80 | Refinada ([ficha](historias/HU-08.md)) |
 | HU-09 Filtrar casos | Administrador | RN-14 | `GET /api/casos?estado=&tipo=&area_id=&categoria_id=&prioridad=` | `/casos` | CP-10 y E2–E4 de HU-09 (#99) | #19 · #97 #98 #99 | Refinada ([ficha](historias/HU-09.md)) |
 | HU-10 Indicadores | Administrador | RN-15 | `GET /api/indicadores` | `/indicadores` | E1–E3 de HU-10 (#102) | #20 · #100 #101 #102 | Refinada ([ficha](historias/HU-10.md)) |
-| HU-11 Gestionar categorías | Administrador | RN-02, RN-16 | `GET /api/categorias?todas=1`, `POST /api/categorias`, `PUT` y `PATCH /api/categorias/:id` | `/categorias` | E1–E5 de HU-11 (#105) | #21 · #103 #104 #105 | Refinada ([ficha](historias/HU-11.md)) |
-| HU-12 Detalle de mi caso y la solución | Solicitante | RN-05 | `GET /api/casos/:id?usuario_id=`, `GET /api/casos/:id/historial` | `/mis-solicitudes/:id` | E1–E3 de HU-12 (#108) | #22 · #106 #107 #108 | Refinada ([ficha](historias/HU-12.md)) |
+| HU-11 Gestionar categorías | Administrador | RN-02, RN-16 | `GET /api/categorias?todas=1`, `POST /api/categorias`, `PUT` y `PATCH /api/categorias/:id` | `/categorias` | CP-15 y E1–E5 de HU-11 (#105) | #21 · #103 #104 #105 | Refinada ([ficha](historias/HU-11.md)) |
+| HU-12 Detalle de mi caso y la solución | Solicitante | RN-05 | `GET /api/casos/:id?usuario_id=`, `GET /api/casos/:id/historial` | `/mis-solicitudes/:id` | CP-16, CP-18 y E1–E3 de HU-12 (#108) | #22 · #106 #107 #108 | Refinada ([ficha](historias/HU-12.md)) |
 
-Los casos propios (CP-11 en adelante) se agregan a esta matriz cuando se escriban en la #38.
+Los casos propios CP-11 a CP-18 (#38) están en la matriz y en la tabla de casos propios.
 
 ## Reglas de negocio
 
@@ -56,5 +56,18 @@ Los casos propios (CP-11 en adelante) se agregan a esta matriz cuando se escriba
 | CP-08 | Devolver desde validación | HU-07 | RN-08, RN-13 |
 | CP-09 | Cerrar caso aprobado | HU-07 | RN-08, RN-13 |
 | CP-10 | Filtrar por tipo, área y prioridad | HU-09 | RN-14 |
+
+## Casos de prueba propios
+
+| CP | Caso | HU | Regla |
+|---|---|---|---|
+| CP-11 | Categoría de otra área | HU-01 | RN-02 |
+| CP-12 | Un agente no asignado registra una atención | HU-06 | RN-12 |
+| CP-13 | Devolución sin motivo | HU-07 | RN-08 |
+| CP-14 | Un caso cerrado no cambia | HU-05 | RN-09 |
+| CP-15 | Una categoría desactivada no aparece en el registro | HU-11, HU-01 | RN-02, RN-16 |
+| CP-16 | Un solicitante no ve un caso ajeno por URL | HU-12, HU-08 | RN-05 |
+| CP-17 | Dos validaciones simultáneas del mismo caso | HU-07 | RN-08, RN-10 |
+| CP-18 | Un caso devuelto muestra todas sus atenciones en orden | HU-12, HU-07, HU-08 | RN-10, RN-13 |
 
 Los resultados reales de cada caso se registran en `docs/pruebas/`.
