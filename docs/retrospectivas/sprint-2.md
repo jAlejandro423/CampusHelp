@@ -81,7 +81,7 @@ Las fechas de cada columna no se anotaron durante el sprint: se tomaron de git y
 
 ## 6. Mejora acordada
 
-> **Propuesta, por confirmar con el equipo.**
+Propuesta en la retro y aceptada por el equipo el 2026-10-12.
 
 | Campo | Valor |
 |---|---|
