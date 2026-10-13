@@ -19,7 +19,7 @@ Registro de la ejecución real de los casos de prueba del taller. Cada caso indi
 | CP-07 | Registrar diagnóstico y solución | HU-06 | 2026-10-12 | ✅ Pasa |
 | CP-08 | Devolver desde validación | HU-07 | 2026-10-12 | ✅ Pasa |
 | CP-09 | Cerrar caso aprobado | HU-07 | 2026-10-12 | ✅ Pasa |
-| CP-10 | Filtrar por tipo, área y prioridad | HU-09 | — | ⏳ Pendiente (Sprint 3) |
+| CP-10 | Filtrar por tipo, área y prioridad | HU-09 | 2026-10-13 | ✅ Pasa |
 
 Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de aceptación:
 
@@ -1016,3 +1016,124 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 ### Conclusión
 
 El flujo principal del MVP funciona de punta a punta desde la interfaz, con persistencia en MySQL y una devolución intermedia. HU-08 cumple E1 a E4 y todas sus excepciones, y el historial sobrevive al reinicio. No se encontraron defectos nuevos. Candidato a caso propio en la #38: flujo completo con devolución y verificación del historial.
+
+---
+
+## HU-09 · Filtrar casos (#99)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-13 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `9f992fa` (incluye #97 y #98) |
+| Base de datos | MySQL 8.0.39 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos y 21 registros de historial al inicio). Para tener coincidencias y descartes en cada filtro se registraron por la API dos casos de prueba: **#7** (Incidente, Red y conectividad / Internet, P1, Carlos Ruiz) y **#8** (Solicitud, Red y conectividad / Wi-Fi, P1, Laura Gómez). |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantalla `/casos`, usuario de prueba **Ana Admin** (id 6, administradora) |
+
+Casos de la base durante la prueba:
+
+| Caso | Tipo | Área / categoría | Prioridad | Estado |
+|---|---|---|---|---|
+| #1 | Incidente | Red y conectividad / Wi-Fi | P1 | Pendiente |
+| #2 | Solicitud | Software / Instalación | P2 | En análisis |
+| #3 | Incidente | Hardware / Computador | P1 | En atención |
+| #4 | Incidente | Cuentas y acceso / Correo | P2 | En validación |
+| #5 | Solicitud | Plataformas académicas / Campus virtual | P3 | Cerrada |
+| #6 | Incidente | Red y conectividad / Internet | P2 | Cerrada |
+| #7 | Incidente | Red y conectividad / Internet | P1 | Pendiente |
+| #8 | Solicitud | Red y conectividad / Wi-Fi | P1 | Pendiente |
+
+### CP-10 · Filtrar por tipo, área y prioridad (E1) ✅
+
+**Pasos:** con Ana, abrir `/casos` y elegir, en este orden, Tipo **Incidente**, Prioridad **P1** y Área **Red y conectividad**.
+
+**Esperado:** solo aparecen los casos que cumplen los tres filtros.
+
+**Obtenido**
+
+| Filtros aplicados | Casos en la tabla |
+|---|---|
+| Ninguno | #8, #7, #2, #1, #3, #6, #4, #5 (los 8, del más reciente al más antiguo) |
+| Incidente | #7, #1, #3, #6, #4 |
+| Incidente + P1 | #7, #1, #3 |
+| Incidente + P1 + Red y conectividad | **#7, #1** |
+
+- Se descartan el #8 por el tipo, el #6 por la prioridad y el #3 por el área.
+- Cada cambio de selector hace una petición nueva al backend: `GET /api/casos?tipo=Incidente`, luego `?tipo=Incidente&prioridad=P1` y luego `?tipo=Incidente&area_id=3&prioridad=P1`. Al elegir el área se piden sus categorías con `GET /api/categorias?area_id=3` (Internet, Red cableada y Wi-Fi). La pantalla no filtra en memoria (regla 2).
+- Por API, `GET /api/casos?tipo=Incidente&area_id=3&prioridad=P1` responde `200` con los casos 7 y 1.
+
+**Evidencia:** [`cp10-filtros.jpg`](../evidencias/pruebas/cp10-filtros.jpg)
+
+### E2 · Filtros sin coincidencias ✅
+
+**Pasos:** con los filtros de CP-10, elegir la categoría **Red cableada**.
+
+**Esperado:** la pantalla muestra "Sin resultados".
+
+**Obtenido:** la tabla se reemplaza por "Sin resultados". Por API, `?tipo=Incidente&area_id=3&prioridad=P1&categoria_id=10` responde `200` con `[]`, y con `categoria_id=9` (Internet) solo devuelve el #7.
+
+**Evidencia:** [`hu09-e2-sin-resultados.jpg`](../evidencias/pruebas/hu09-e2-sin-resultados.jpg)
+
+### E3 · Limpiar los filtros ✅
+
+**Pasos:** con los filtros de E2 aplicados, pulsar **Limpiar**.
+
+**Esperado:** vuelven a aparecer todos los casos.
+
+**Obtenido:** los cinco selectores vuelven a "Todos" o "Todas", la categoría vuelve a "Elige primero un área" y queda deshabilitada, y la tabla muestra de nuevo los 8 casos.
+
+**Evidencia:** [`hu09-e3-limpiar.jpg`](../evidencias/pruebas/hu09-e3-limpiar.jpg)
+
+### E4 · Valor inválido en la API ✅
+
+**Pasos:** `GET /api/casos?prioridad=P9`.
+
+**Esperado:** `400` con `{ error, detalles }`.
+
+**Obtenido:** `400` · `{"error":"Datos inválidos","detalles":["prioridad inválida. Valores permitidos: P1, P2, P3."]}`. Los demás valores inválidos están en las excepciones.
+
+### Otros criterios de HU-09
+
+| Regla | Pasos | Obtenido | Estado |
+|---|---|---|---|
+| 1 · Filtro por estado | Estado **Cerrada** en la pantalla | #6 y #5 | ✅ |
+| 1 · Filtros combinables | `?estado=Pendiente&area_id=3` | `200` · #8, #7 y #1 | ✅ |
+| 1 · Un filtro vacío no restringe | `?tipo=&area_id=&prioridad=&categoria_id=&estado=` | `200` · los 8 casos | ✅ |
+| 1 · Área y categoría | Área **Red y conectividad** + categoría **Internet** en la pantalla | #7 y #6 | ✅ |
+| 1 · Tipo y prioridad | **Solicitud** + **P3** en la pantalla | Solo el #5 | ✅ |
+| 3 · Sin filtros, del más reciente al más antiguo | `GET /api/casos` | `200` · #8, #7, #2, #1, #3, #6, #4, #5 | ✅ |
+| 5 · Categoría que no pertenece al área | `?area_id=3&categoria_id=1` (Computador es de Hardware) | `200` con `[]`, sin error | ✅ |
+| Arreglo de la #98 | Elegir Red y conectividad + Internet y volver el área a **Todas** | La categoría se reinicia y se deshabilita, y vuelven los 8 casos | ✅ |
+| Compatibilidad con HU-02 | `?usuario_id=1&area_id=3` | `200` · #8 y #1 (solo los de Laura) | ✅ |
+| Ver historial | En el #8 desde `/casos` | Abre la línea de tiempo con "Caso registrado" y se cierra con **Cerrar** | ✅ |
+| Menú | Cambiar entre los usuarios de prueba | **Casos** solo aparece en el menú de Ana (administradora), junto a Indicadores y Categorías. No aparece para Laura, Diego ni Pedro | ✅ |
+
+### Excepciones de HU-09
+
+| Situación | Petición | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| `prioridad` fuera del dominio | `?prioridad=P9` | `400` | `400` · "prioridad inválida. Valores permitidos: P1, P2, P3." | ✅ |
+| `tipo` fuera del dominio | `?tipo=Queja` y `?tipo=incidente` (en minúscula) | `400` | `400` · "tipo inválido. Valores permitidos: Incidente, Solicitud." | ✅ |
+| `estado` fuera del dominio | `?estado=Inventado` | `400` | `400` · "estado inválido. Valores permitidos: Pendiente, En análisis, En atención, En validación, Cerrada." | ✅ |
+| `area_id` no es entero positivo | `?area_id=abc`, `?area_id=0` y `?area_id=3 OR 1=1` | `400` | `400` · "area_id debe ser un entero positivo." | ✅ |
+| `categoria_id` no es entero positivo | `?categoria_id=-1` y `?categoria_id=1.5` | `400` | `400` · "categoria_id debe ser un entero positivo." | ✅ |
+| Área o categoría que no existen | `?area_id=99` y `?categoria_id=999` | `200` con lista vacía | `200` · `[]` | ✅ |
+| Error de la base de datos | Se renombró la tabla temporalmente (`RENAME TABLE caso TO caso_x`) y se pidió `?tipo=Incidente&area_id=3&prioridad=P1` | `500` | `500` · `{"error":"Table 'campushelp.caso' doesn't exist","detalles":[]}`. Después se restauró la tabla y la petición volvió a responder `200`. | ✅ (ver observaciones) |
+
+### Prueba de reinicio
+
+Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo (`/api/health` → `db: up`). `GET /api/casos?tipo=Incidente&area_id=3&prioridad=P1` sigue respondiendo los casos 7 y 1, y `GET /api/casos` los 8. En MySQL hay 8 casos y 23 registros de historial: los 21 de los seeds y el evento `creacion` de los casos 7 y 8. ✅
+
+### Observaciones
+
+- **Con varios valores inválidos solo se informa el primero:** `?prioridad=P9&tipo=Queja` responde solo "tipo inválido…". Cumple el `400`, pero `detalles` podría listar todos los errores, como hace el registro de HU-01. No bloquea.
+- **El `500` expone el mensaje interno de MySQL:** es la misma observación de HU-08 (`middlewares/errorHandler.js` devuelve `err.message`). No bloquea.
+- **Las peticiones no se cancelan:** si se cambian varios selectores muy rápido, una respuesta vieja podría llegar después de una nueva (sugerencia de la auditoría de la #98). En esta ejecución no ocurrió.
+- Con 11 columnas, la tabla necesita scroll horizontal en pantallas estrechas.
+- Durante esta ejecución no aparecieron errores nuevos en la consola del navegador, y el log de la API no registró errores.
+
+### Conclusión
+
+HU-09 cumple CP-10, E2 a E4, las reglas 1, 3 y 5 y todas sus excepciones. La regla 2 se comprobó en las peticiones de la pantalla, y los filtros siguen funcionando después del reinicio. No se encontraron defectos. Candidatos a casos propios en la #38: una categoría que no pertenece al área devuelve una lista vacía, y quitar el área reinicia la categoría (defecto corregido en la auditoría de la #98).
