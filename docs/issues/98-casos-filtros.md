@@ -24,6 +24,7 @@ categoría de otra área → `[]` (R2).
 - `?tipo=Incidente&prioridad=P1 → [1, 3]` (AND); `?tipo=Solicitud&prioridad=P1 → []`;
   `?prioridad=P9 → 400` con detalles (E1/CP-10, E2, E4).
 - Limpiar restaura la lista completa (E3).
+- Al cambiar el área o volver a "Todas", la categoría se reinicia y deja de filtrar (hallado en la auditoría).
 - Sin conflictos: `client.ts`, `Casos.tsx` + este doc.
 
 ## Trazabilidad

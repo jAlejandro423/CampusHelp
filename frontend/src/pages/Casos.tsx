@@ -43,12 +43,7 @@ function Casos() {
       return;
     }
     obtenerCategorias(Number(areaId))
-      .then((data) => {
-        setCategorias(data);
-        setCategoriaId((prev) =>
-          data.some((c) => c.id === prev) ? prev : ""
-        );
-      })
+      .then(setCategorias)
       .catch(() => setCategorias([]));
   }, [areaId]);
 
@@ -177,9 +172,11 @@ function Casos() {
             <select
               id="f-area"
               value={areaId}
-              onChange={(e) =>
-                setAreaId(e.target.value === "" ? "" : Number(e.target.value))
-              }
+              onChange={(e) => {
+                // La categoría depende del área: al cambiarla se reinicia.
+                setAreaId(e.target.value === "" ? "" : Number(e.target.value));
+                setCategoriaId("");
+              }}
               className={selectClass}
             >
               <option value="">Todas</option>
