@@ -28,6 +28,7 @@ Las HU que no tienen un CP obligatorio propio se prueban con sus escenarios de a
 | HU-02 · Consultar mis casos | E1, E2, E3, E4 y excepciones | #28 | 2026-10-10 | ✅ Pasa |
 | HU-03 · Bandeja de casos pendientes | E1, E2, E3, E4, regla 4 y excepciones | #31 | 2026-10-10 | ✅ Pasa |
 | HU-08 · Historial y flujo completo del MVP | Flujo completo con devolución, E1, E2, E3, E4 y excepciones | #80 | 2026-10-12 | ✅ Pasa |
+| HU-10 · Indicadores | E1, E2, E3, R4 y excepciones | #102 | 2026-10-13 | ✅ Pasa |
 
 ---
 
@@ -1137,3 +1138,106 @@ Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuev
 ### Conclusión
 
 HU-09 cumple CP-10, E2 a E4, las reglas 1, 3 y 5 y todas sus excepciones. La regla 2 se comprobó en las peticiones de la pantalla, y los filtros siguen funcionando después del reinicio. No se encontraron defectos. Candidatos a casos propios en la #38: una categoría que no pertenece al área devuelve una lista vacía, y quitar el área reinicia la categoría (defecto corregido en la auditoría de la #98).
+
+---
+
+## HU-10 · Indicadores (#102)
+
+**Entorno de la ejecución**
+
+| Campo | Valor |
+|---|---|
+| Fecha | 2026-10-13 |
+| Ejecutó | @jAlejandro423 (QA) |
+| Versión | `develop` en `9f992fa` (incluye #100 y #101) |
+| Base de datos | MySQL 8.0.39 limpia, con `db/schema.sql` y `db/seeds.sql` (6 casos y 21 registros de historial al inicio) |
+| Backend | `node src/server.js` · `GET /api/health` → `{"status":"ok","db":"up"}` |
+| Frontend | Vite, pantalla `/indicadores`, usuario de prueba **Ana Admin** (id 6, administradora) |
+
+Para comparar, cada indicador se calculó también con una consulta SQL independiente de la del backend: un `GROUP BY` directo sobre `caso` por cada grupo y los promedios con `TIMESTAMPDIFF(MINUTE, …) / 60`.
+
+### E1 · Cada indicador coincide con una consulta SQL directa ✅
+
+**Pasos:** con Ana, abrir `/indicadores`. Comparar la pantalla, `GET /api/indicadores` y la consulta SQL.
+
+**Esperado:** cada total y cada promedio coincide con el SQL.
+
+**Obtenido**
+
+| Indicador | SQL directo | API | Pantalla |
+|---|---|---|---|
+| Total | 6 | 6 | 6 |
+| Por estado | Pendiente 1 · En análisis 1 · En atención 1 · En validación 1 · Cerrada 2 | Igual | Igual |
+| Por tipo | Incidente 4 · Solicitud 2 | Igual | Igual |
+| Por prioridad | P1 2 · P2 3 · P3 1 | Igual | Igual |
+| Por área | Hardware 1 · Software 1 · Red y conectividad 2 · Cuentas y acceso 1 · Plataformas académicas 1 | Igual | Igual |
+| Creación → asignación | 7.0625 h sobre 4 casos (21.5 + 4.75 + 1 + 1) / 4 | `7.1`, `casos_asignados: 4` | "7.1 h · Sobre 4 casos asignados" |
+| Creación → cierre | 41 h sobre 2 casos (32 + 50) / 2 | `41`, `casos_cerrados: 2` | "41.0 h · Sobre 2 casos cerrados" |
+
+- El #2 está En análisis pero no tiene `fecha_asignacion`, así que no entra en el promedio de asignación (regla 3).
+- Cada grupo lista todos sus valores: 5 estados, 2 tipos, 3 prioridades y 5 áreas (regla 2).
+- Los promedios se muestran con un decimal (R1), y las barras son de CSS, sin librerías de gráficos (R2).
+
+**Evidencia:** [`hu10-e1-indicadores.jpg`](../evidencias/pruebas/hu10-e1-indicadores.jpg) y [`hu10-e1-grupos.jpg`](../evidencias/pruebas/hu10-e1-grupos.jpg)
+
+### E2 · Un caso nuevo sube los contadores ✅
+
+**Pasos:** con el dashboard abierto, registrar por la API un caso para Laura (Solicitud, Plataformas académicas / Campus virtual, P3) y pulsar **Actualizar**.
+
+**Esperado:** suben el total, Pendiente y los contadores de su tipo, prioridad y área.
+
+**Obtenido:** `POST /api/casos` respondió `201` con el **#7** en `Pendiente`. Al pulsar **Actualizar**, sin recargar la página:
+
+| Indicador | Antes | Después |
+|---|---|---|
+| Total | 6 | **7** |
+| Pendiente | 1 | **2** |
+| Solicitud | 2 | **3** |
+| P3 | 1 | **2** |
+| Plataformas académicas | 1 | **2** |
+| Los demás contadores y los promedios | — | Sin cambios (7.1 h y 41.0 h) |
+
+La consulta SQL directa dio los mismos valores.
+
+**Evidencia:** [`hu10-e2-actualizar.jpg`](../evidencias/pruebas/hu10-e2-actualizar.jpg)
+
+### E3 · Sin casos cerrados ✅
+
+**Pasos:** dejar temporalmente la base sin casos cerrados: se respaldaron los casos 5 y 6 en una tabla auxiliar y se pasaron a `En validación` con `fecha_cierre = NULL`. Pulsar **Actualizar**.
+
+**Esperado:** el promedio de cierre muestra "Sin datos" y no un error.
+
+**Obtenido:** la API responde `200` con `"promedio_horas_cierre": null` y `"casos_cerrados": 0`. La tarjeta muestra **"Sin datos"** y "Sobre 0 casos cerrados", Cerrada aparece en 0 y En validación en 3. El promedio de asignación sigue en 7.1 h. Después se restauraron los casos 5 y 6 (`Cerrada` con su `fecha_cierre` original).
+
+**Evidencia:** [`hu10-e3-sin-datos.jpg`](../evidencias/pruebas/hu10-e3-sin-datos.jpg)
+
+### Otros criterios de HU-10
+
+| Regla | Pasos | Obtenido | Estado |
+|---|---|---|---|
+| R4 · Área inactiva con casos | `UPDATE area SET activa = 0 WHERE id = 5` y `GET /api/indicadores` | Plataformas académicas sigue en `por_area` con 2, y la suma por área (7) es igual al total. Después se reactivó el área | ✅ |
+| 1 · Se calcula en el momento | E2 y E3 | Los cambios en la BD se ven al pulsar **Actualizar**, sin guardar indicadores | ✅ |
+| Redirección | Ir a `/dashboard` | Lleva a `/indicadores` | ✅ |
+| Menú | Cambiar entre los usuarios de prueba | **Indicadores** solo aparece en el menú de Ana, junto a Casos y Categorías. Laura ve Registrar y Mis solicitudes, Diego la Bandeja y Pedro Por validar | ✅ (ver observaciones) |
+
+### Excepciones de HU-10
+
+| Situación | Petición | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| Error de la base de datos | Se renombró la tabla temporalmente (`RENAME TABLE caso TO caso_x`) y se pidió `GET /api/indicadores` | `500` | `500` · `{"error":"Table 'campushelp.caso' doesn't exist","detalles":[]}`. Al pulsar **Actualizar**, la pantalla muestra "No se pudieron cargar los indicadores.". Después se restauró la tabla, la API volvió a responder `200` y **Actualizar** cargó de nuevo los indicadores | ✅ (ver observaciones) |
+
+**Evidencia:** [`hu10-error-bd.jpg`](../evidencias/pruebas/hu10-error-bd.jpg)
+
+### Prueba de reinicio
+
+Se detuvieron el backend y MySQL (`mysqladmin shutdown`) y se arrancaron de nuevo. La respuesta de `GET /api/indicadores` fue idéntica byte a byte a la de antes del reinicio (total 7). En MySQL hay 7 casos y 22 registros de historial: los 21 de los seeds y el evento `creacion` del #7. ✅
+
+### Observaciones
+
+- **La pantalla no restringe el acceso por rol:** el menú solo ofrece Indicadores al administrador, pero si Laura escribe `/indicadores` en la URL ve los indicadores. HU-10 no pide restringirlo, la autenticación es simulada y son datos agregados de solo lectura, así que no se registra como defecto. Si se quiere, se puede mostrar un aviso como el de Categorías.
+- **El `500` expone el mensaje interno de MySQL:** es la misma observación de HU-08 y HU-09 (`middlewares/errorHandler.js` devuelve `err.message`). No bloquea.
+- Durante esta ejecución no aparecieron errores nuevos en la consola del navegador, y el log de la API no registró errores fuera de la prueba del `500`.
+
+### Conclusión
+
+HU-10 cumple E1 a E3, las reglas 1 a 4 y la excepción del `500`: cada indicador coincide con una consulta SQL independiente, y los indicadores sobreviven al reinicio. No se encontraron defectos. Candidatos a casos propios en la #38: un caso nuevo sube los contadores (E2) y "Sin datos" sin casos cerrados (E3).
