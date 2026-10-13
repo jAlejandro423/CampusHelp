@@ -22,6 +22,7 @@ function PorValidar() {
   );
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [aviso, setAviso] = useState("");
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
   const [errorFila, setErrorFila] = useState<Record<number, string>>({});
   const [motivoId, setMotivoId] = useState<number | null>(null);
@@ -97,6 +98,7 @@ function PorValidar() {
       return;
     }
     setProcesandoId(caso.id);
+    setAviso("");
     setErrorFila((prev) => ({ ...prev, [caso.id]: "" }));
     try {
       await validarCaso(caso.id, {
@@ -106,7 +108,7 @@ function PorValidar() {
       });
       setMotivoId(null);
       setMotivo("");
-      setError("");
+      setAviso("");
       setErrorFila((prev) => ({ ...prev, [caso.id]: "" }));
       await cargar({ silencioso: true });
     } catch (err) {
@@ -116,9 +118,9 @@ function PorValidar() {
           ? [err.message, ...err.detalles].filter(Boolean).join(" ")
           : "No se pudo validar el caso. Intenta de nuevo.";
       await cargar({ silencioso: true });
-      // Si el caso cambió (409), la recarga lo saca de la lista y el error
-      // de la fila ya no se vería: se muestra también arriba.
-      setError(mensaje);
+      // DEF-02: el error de la acción va en `aviso`, encima de la lista y
+      // en la fila, nunca en `error` (que reemplazaría toda la lista).
+      setAviso(mensaje);
       setErrorFila((prev) => ({ ...prev, [caso.id]: mensaje }));
     } finally {
       setProcesandoId(null);
@@ -143,6 +145,11 @@ function PorValidar() {
       )}
 
       <div className="mt-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        {aviso && !cargando && !error && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            {aviso}
+          </div>
+        )}
         {cargando ? (
           <p className="text-sm text-slate-500">Cargando casos…</p>
         ) : error ? (
